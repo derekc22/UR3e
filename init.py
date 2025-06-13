@@ -4,8 +4,6 @@ import time
 
 
 
-
-
 def load_model(model_path):
     m = mujoco.MjModel.from_xml_path(model_path)
     d = mujoco.MjData(m)
@@ -23,10 +21,17 @@ def main():
     viewer = mujoco.viewer.launch_passive(m, d)
     # python -m mujoco.viewer --mjcf=./model/ur3e.xml
 
-    while True:
+    start = time.time()
+    t = time.time() - start
+
+    while t < 1000:
         mujoco.mj_step(m, d)
         viewer.sync()
+
+        print("dimensions: ", m.nv)
+
         time.sleep(0.01)
+        t = time.time() -  start
 
 
 
