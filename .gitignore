@@ -1,2 +1,3 @@
 .DS_Store
-model/mesh/*
+archive/model/mesh/*
+**/__pycache__

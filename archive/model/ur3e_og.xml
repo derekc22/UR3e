@@ -107,5 +107,4 @@
       <actuatorfrc name="wrist_3_actuatorfrc"       actuator="wrist_3_motor"      />
     </sensor>
 
-
 </mujoco>
