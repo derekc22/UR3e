@@ -23,11 +23,17 @@ def reset(m, d, intialization='home'):
 
 def main():
 
-    model_path = "archive/model/ur3e.xml"
+    # model_path = "assets/ur3e/ur3e.xml"
+    # model_path = "assets/ur3e_raw.xml"
+    # model_path = "assets/2f85/2f85.xml"
+    model_path = "assets/main.xml"
+    # model_path = "assets/mug/mug.xml"
+    # model_path = "assets/ur3e_fish.xml"
+    
 
     m, d = load_model(model_path)
 
-    reset(m, d)
+    # reset(m, d)
 
     viewer = mujoco.viewer.launch_passive(m, d)
     # python -m mujoco.viewer --mjcf=./model/ur3e.xml
@@ -39,7 +45,7 @@ def main():
         mujoco.mj_step(m, d)
         viewer.sync()
 
-        print("dimensions: ", m.nv)
+        print("dimensions: ", m.nq)
 
         # time.sleep(0.01)
         t = time.time() -  start

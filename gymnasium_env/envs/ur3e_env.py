@@ -9,13 +9,13 @@ class UR3eEnv(MujocoEnv):
 
     metadata = {
         "render_modes": ["human"],
-        "render_fps": 20
+        "render_fps": 200
     }
 
     def __init__(self, render_mode=None):
 
         # model_path = os.path.join(os.path.dirname(__file__), "archive/model/ur3e.xml")
-        model_path = os.path.abspath("./archive/model/ur3e.xml")
+        model_path = os.path.abspath("./assets/main.xml")
 
         # Temporary MujocoEnv init to access model parameters
         self._initialize_model(model_path)
@@ -41,8 +41,8 @@ class UR3eEnv(MujocoEnv):
 
 
         self.action_space = spaces.Box(
-            low=-1.0,
-            high=1.0,
+            low=-300.0,
+            high=300.0,
             shape=(action_dim,),
             dtype=np.float64
         )

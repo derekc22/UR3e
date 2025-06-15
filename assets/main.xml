@@ -1,0 +1,365 @@
+<mujoco model="ur3e_with_gripper">
+  <!-- <compiler angle="radian" meshdir="./" texturedir="./ur3e/mesh/visual/" autolimits="true"/> -->
+  <compiler angle="radian" meshdir="./" autolimits="true"/>
+  <option cone="elliptic" impratio="10" timestep="0.001" gravity="0 0 -9.81"/>
+  <size njmax="500" nconmax="100"/>
+  
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global offheight="2160" offwidth="3840"/>
+    <quality offsamples="8"/>
+  </visual>
+
+  <asset>
+    <!-- UR3e assets -->
+    <mesh name="base" file="ur3e/mesh/collision/base.stl"/>
+    <mesh name="shoulder" file="ur3e/mesh/collision/shoulder.stl"/>
+    <mesh name="upperarm" file="ur3e/mesh/collision/upperarm.stl"/>
+    <mesh name="forearm" file="ur3e/mesh/collision/forearm.stl"/>
+    <mesh name="wrist1" file="ur3e/mesh/collision/wrist1.stl"/>
+    <mesh name="wrist2" file="ur3e/mesh/collision/wrist2.stl"/>
+    <mesh name="wrist3" file="ur3e/mesh/collision/wrist3.stl"/>
+    
+    <!-- REAL FISH -->
+    <!-- <mesh name="fish"     file="fish/fish.stl" /> -->
+
+    <!-- FAKE FISH (AKA MUG) -->
+    <mesh name="fish" file="mug/mug.obj" scale="0.01 0.01 0.01"/>
+    
+    <!-- Gripper assets -->
+    <material name="metal" rgba="0.58 0.58 0.58 1"/>
+    <material name="silicone" rgba="0.1882 0.1882 0.1882 1"/>
+    <material name="gray" rgba="0.4627 0.4627 0.4627 1"/>
+    <material name="black" rgba="0.149 0.149 0.149 1"/>
+    <mesh class="2f85" name="gripper_base_mount" file="2f85/mesh/base_mount.stl"/>
+    <mesh class="2f85" name="gripper_base" file="2f85/mesh/base.stl"/>
+    <mesh class="2f85" name="gripper_driver" file="2f85/mesh/driver.stl"/>
+    <mesh class="2f85" name="gripper_coupler" file="2f85/mesh/coupler.stl"/>
+    <mesh class="2f85" name="gripper_follower" file="2f85/mesh/follower.stl"/>
+    <mesh class="2f85" name="gripper_pad" file="2f85/mesh/pad.stl"/>
+    <mesh class="2f85" name="gripper_silicone_pad" file="2f85/mesh/silicone_pad.stl"/>
+    <mesh class="2f85" name="gripper_spring_link" file="2f85/mesh/spring_link.stl"/>
+    
+    <!-- Common textures -->
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <!-- Dont think these are needed -->
+    <!-- <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2" width="512" height="512"/> -->
+    <!-- <material name="MatPlane" reflectance="0.3" texture="texplane" texrepeat="1 1" texuniform="true"/> -->
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.5"/>
+  </asset>
+
+  <default>
+    <!-- UR3e defaults -->
+    <default class="force-torque">
+      <site type="box" size=".01 .01 .02" rgba="1 0 0 1"/>
+    </default>
+    
+    <!-- Gripper defaults -->
+    <default class="2f85">
+      <mesh scale="0.001 0.001 0.001"/>
+      <general biastype="affine"/>
+      <joint axis="1 0 0"/>
+      <default class="driver">
+        <joint range="0 0.8" armature="0.005" damping="0.1" solimplimit="0.95 0.99 0.001" solreflimit="0.005 1"/>
+      </default>
+      <default class="follower">
+        <joint range="-0.872664 0.872664" armature="0.001" pos="0 -0.018 0.0065" solimplimit="0.95 0.99 0.001" solreflimit="0.005 1"/>
+      </default>
+      <default class="spring_link">
+        <joint range="-0.29670597283 0.8" armature="0.001" stiffness="0.05" springref="2.62" damping="0.00125"/>
+      </default>
+      <default class="coupler">
+        <joint range="-1.57 0" armature="0.001" solimplimit="0.95 0.99 0.001" solreflimit="0.005 1"/>
+      </default>
+      <default class="visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2"/>
+      </default>
+      <default class="collision">
+        <geom type="mesh" group="3"/>
+        <default class="pad_box1">
+          <geom mass="0" type="box" pos="0 -0.0026 0.028125" size="0.011 0.004 0.009375" friction="0.7"
+            solimp="0.95 0.99 0.001" solref="0.004 1" priority="1" rgba="0.55 0.55 0.55 1"/>
+        </default>
+        <default class="pad_box2">
+          <geom mass="0" type="box" pos="0 -0.0026 0.009375" size="0.011 0.004 0.009375" friction="0.6"
+            solimp="0.95 0.99 0.001" solref="0.004 1" priority="1" rgba="0.45 0.45 0.45 1"/>
+        </default>
+      </default>
+    </default>
+  </default>
+
+  <worldbody>
+    <light name="spotlight0" mode="targetbodycom" target="robot_base" pos="0 0 10" cutoff="60" castshadow="false"/>
+    <light name="spotlight1" mode="targetbodycom" target="robot_base" pos="0.5 0 10" cutoff="60" castshadow="false"/>
+    <!-- <geom name="floor" size="0 0 .125" type="plane" material="groundplane" conaffinity="15" condim="3" /> -->
+    <geom name="floor" size="0 0 .125" pos="0 0 -.913" type="plane" material="groundplane" conaffinity="15" condim="3" />
+
+    <body name="table" pos="0.4 0 0" >
+      <geom name="table" type="plane" size=".5 .6 0.1" group = "1" rgba=".1 .1 .1 1" />
+      <!-- <geom name="table" type="box" size="2 2 0.000001" group = "1" rgba=".1 .1 .1 1" /> -->
+    </body>
+
+    <!-- REAL FISH -->
+    <!-- <body name="fish" pos="0.4 0.1 0.02" quat="1 0 0 0" >
+      <joint name="fish" type="free" limited="false"/>
+        <geom name="fish" pos="0 0 0" quat="1 0 0 0" type="mesh" group="1" mesh="fish" />
+        <site name="fish_front" pos="-0.038 0 0.01"  quat="1 0 0 0" type="sphere" size="1e-3" group="2" rgba="1 1 0 1" />
+        <site name="fish_rear"  pos="0.031 0 0.01"  quat="0 0 0 1" type="sphere" size="1e-3" group="2" rgba="1 1 0 1" />
+    </body> -->
+
+    <!-- FAKE FISH (AKA MUG) -->
+    <body name="fish" pos="0.4 0.1 0.02" quat="1 0 0 0" >
+      <joint name="fish" type="free" limited="false"/>
+        <geom name="fish" pos="0 0 0" quat="1 0 0 0" type="mesh" group="1" mesh="fish"/>
+    </body>
+
+    <!-- UR3e Arm - renamed base to robot_base -->
+    <body name="robot_base" pos="0 0 0">
+      <!-- <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.7 0.7 0.7 1" mesh="base"/>
+      <geom type="mesh" rgba="0.7 0.7 0.7 1" mesh="base"/> -->
+      <body name="shoulder_link" pos="0 0 0.152">      
+        <inertial pos="0 0 0" mass="2" diaginertia="0.00809316 0.00809316 0.005625"/>
+        <joint name="shoulder_pan_joint" pos="0 0 0" axis="0 0 1" limited="true" range="-3.14159 3.14159" damping="1.0" frictionloss="0.2"/>
+        <site name="shoulder_pan_sensor" class="force-torque"/>
+        <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.7 0.7 0.7 1" mesh="shoulder"/>
+        <geom name="shoulder" type="mesh" rgba="0.7 0.7 0.7 1" mesh="shoulder"/>
+        <body name="upper_arm_link" pos="0 0.12 0" quat="0.707107 0 0.707107 0">
+          <inertial pos="0 0 0.122" mass="3.42" diaginertia="0.0217771 0.0217771 0.00961875"/>
+          <joint name="shoulder_lift_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-3.14159 3.14159" damping="1.0" frictionloss="0.2"/>
+          <site name="shoulder_lift_sensor" class="force-torque"/>
+          <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.7 0.7 0.7 1" mesh="upperarm"/>
+          <geom name="upperarm" type="mesh" rgba="0.7 0.7 0.7 1" mesh="upperarm"/>
+          <body name="forearm_link" pos="0 -0.093 0.244">
+            <inertial pos="0 0 0.1065" mass="1.26" diaginertia="0.00653562 0.00653562 0.00354375"/>
+            <joint name="elbow_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-3.14159 3.14159" damping="1.0" frictionloss="0.2"/>
+            <site name="elbow_sensor" class="force-torque"/>
+            <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.7 0.7 0.7 1" mesh="forearm"/>
+            <geom name="forearm" type="mesh" rgba="0.7 0.7 0.7 1" mesh="forearm"/>
+            <body name="wrist_1_link" pos="0 0 0.213" quat="0.707107 0 0.707107 0">
+              <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="0.8" diaginertia="0.00225 0.002085 0.002085"/>
+              <joint name="wrist_1_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-3.14159 3.14159" damping="1.0" frictionloss="0.2"/>
+              <site name="wrist_1_sensor" class="force-torque"/>
+              <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.7 0.7 0.7 1" mesh="wrist1"/>
+              <geom name="wrist1" type="mesh" rgba="0.7 0.7 0.7 1" mesh="wrist1"/>
+              <body name="wrist_2_link" pos="0 0.104 0">
+                <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="0.8" diaginertia="0.00225 0.002085 0.002085"/>
+                <joint name="wrist_2_joint" pos="0 0 0" axis="0 0 1" limited="true" range="-3.14159 3.14159" damping="1.0" frictionloss="0.2"/>
+                <site name="wrist_2_sensor" class="force-torque"/>
+                <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.7 0.7 0.7 1" mesh="wrist2"/>
+                <geom name="wrist2" type="mesh" rgba="0.7 0.7 0.7 1" mesh="wrist2"/>
+                <body name="wrist_3_link" pos="0 0 0.085">
+                  <inertial pos="0 0.000233618 0" quat="0.5 0.5 -0.5 0.5" mass="0.351" diaginertia="0.000991097 0.000918909 0.000912204"/>
+                  <joint name="wrist_3_joint" pos="0 0 0" axis="0 1 0" limited="true" range="-3.14159 3.14159" damping="1.0" frictionloss="0.2"/>
+                  <site name="wrist_3_sensor" class="force-torque"/>
+                  <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.7 0.7 0.7 1" mesh="wrist3"/>
+                  <geom name="wrist3" type="mesh" rgba="0.7 0.7 0.7 1" mesh="wrist3"/>
+                  
+                  <!-- From fish. Try this out -->
+                  <!-- <geom size="0.005 0.005 0.005" pos="0 0.082 0" quat="0.707107 0 0 0.707107" type="box" group="2" /> -->
+                  <!-- <site name="end_effector" type="sphere" size="1e-3" pos="0 0.092 0" group="2" rgba="0 1 0 1" /> -->
+
+                  <!-- Attached Gripper -->
+                  <body name="robotiq_base_mount" pos="0 0.082 0" quat="0.707107 -0.707107 0 0" childclass="2f85">
+                  <!-- <body name="robotiq_base_mount" pos="0 0.092 0" quat="0.707107 -0.707107 0 0" childclass="2f85"> -->
+                    <geom class="visual" mesh="gripper_base_mount" material="black"/>
+                    <geom class="collision" mesh="gripper_base_mount"/>
+                    <!-- Gripper base renamed to gripper_base -->
+                    <body name="gripper_base" pos="0 0 0.0038" quat="1 0 0 -1">
+                      <inertial mass="0.777441" pos="0 -2.70394e-05 0.0354675" quat="1 -0.00152849 0 0" diaginertia="0.000260285 0.000225381 0.000152708"/>
+                      <geom class="visual" mesh="gripper_base" material="black"/>
+                      <geom name="collision" class="collision" mesh="gripper_base"/>
+                      <site name="pinch" pos="0 0 0.145" type="sphere" group="5" rgba="0.9 0.9 0.9 1" size="0.005"/>
+                      <!-- Right-hand side 4-bar linkage -->
+                      <body name="right_driver" pos="0 0.0306011 0.054904">
+                        <inertial mass="0.00899563" pos="2.96931e-12 0.0177547 0.00107314" quat="0.681301 0.732003 0 0" diaginertia="1.72352e-06 1.60906e-06 3.22006e-07"/>
+                        <joint name="right_driver_joint" class="driver"/>
+                        <geom class="visual" mesh="gripper_driver" material="gray"/>
+                        <geom class="collision" mesh="gripper_driver"/>
+                        <body name="right_coupler" pos="0 0.0315 -0.0041">
+                          <inertial mass="0.0140974" pos="0 0.00301209 0.0232175" quat="0.705636 -0.0455904 0.0455904 0.705636" diaginertia="4.16206e-06 3.52216e-06 8.88131e-07"/>
+                          <joint name="right_coupler_joint" class="coupler"/>
+                          <geom class="visual" mesh="gripper_coupler" material="black"/>
+                          <geom class="collision" mesh="gripper_coupler"/>
+                        </body>
+                      </body>
+                      <body name="right_spring_link" pos="0 0.0132 0.0609">
+                        <inertial mass="0.0221642" pos="-8.65005e-09 0.0181624 0.0212658" quat="0.663403 -0.244737 0.244737 0.663403" diaginertia="8.96853e-06 6.71733e-06 2.63931e-06"/>
+                        <joint name="right_spring_link_joint" class="spring_link"/>
+                        <geom class="visual" mesh="gripper_spring_link" material="black"/>
+                        <geom class="collision" mesh="gripper_spring_link"/>
+                        <body name="right_follower" pos="0 0.055 0.0375">
+                          <inertial mass="0.0125222" pos="0 -0.011046 0.0124786" quat="1 0.1664 0 0" diaginertia="2.67415e-06 2.4559e-06 6.02031e-07"/>
+                          <joint name="right_follower_joint" class="follower"/>
+                          <geom class="visual" mesh="gripper_follower" material="black"/>
+                          <geom class="collision" mesh="gripper_follower"/>
+                          <body name="right_pad" pos="0 -0.0189 0.01352">
+                            <geom class="pad_box1" name="right_pad1"/>
+                            <geom class="pad_box2" name="right_pad2"/>
+                            <inertial mass="0.0035" pos="0 -0.0025 0.0185" quat="0.707107 0 0 0.707107" diaginertia="4.73958e-07 3.64583e-07 1.23958e-07"/>
+                            <geom class="visual" mesh="gripper_pad"/>
+                            <body name="right_silicone_pad">
+                              <geom name="right_gripper_pad" class="visual" mesh="gripper_silicone_pad" material="black"/>
+                            </body>
+                          </body>
+                        </body>
+                      </body>
+                      <!-- Left-hand side 4-bar linkage -->
+                      <body name="left_driver" pos="0 -0.0306011 0.054904" quat="0 0 0 1">
+                        <inertial mass="0.00899563" pos="0 0.0177547 0.00107314" quat="0.681301 0.732003 0 0" diaginertia="1.72352e-06 1.60906e-06 3.22006e-07"/>
+                        <joint name="left_driver_joint" class="driver"/>
+                        <geom class="visual" mesh="gripper_driver" material="gray"/>
+                        <geom class="collision" mesh="gripper_driver"/>
+                        <body name="left_coupler" pos="0 0.0315 -0.0041">
+                          <inertial mass="0.0140974" pos="0 0.00301209 0.0232175" quat="0.705636 -0.0455904 0.0455904 0.705636" diaginertia="4.16206e-06 3.52216e-06 8.88131e-07"/>
+                          <joint name="left_coupler_joint" class="coupler"/>
+                          <geom class="visual" mesh="gripper_coupler" material="black"/>
+                          <geom class="collision" mesh="gripper_coupler"/>
+                        </body>
+                      </body>
+                      <body name="left_spring_link" pos="0 -0.0132 0.0609" quat="0 0 0 1">
+                        <inertial mass="0.0221642" pos="-8.65005e-09 0.0181624 0.0212658" quat="0.663403 -0.244737 0.244737 0.663403" diaginertia="8.96853e-06 6.71733e-06 2.63931e-06"/>
+                        <joint name="left_spring_link_joint" class="spring_link"/>
+                        <geom class="visual" mesh="gripper_spring_link" material="black"/>
+                        <geom class="collision" mesh="gripper_spring_link"/>
+                        <body name="left_follower" pos="0 0.055 0.0375">
+                          <inertial mass="0.0125222" pos="0 -0.011046 0.0124786" quat="1 0.1664 0 0" diaginertia="2.67415e-06 2.4559e-06 6.02031e-07"/>
+                          <joint name="left_follower_joint" class="follower"/>
+                          <geom class="visual" mesh="gripper_follower" material="black"/>
+                          <geom class="collision" mesh="gripper_follower"/>
+                          <body name="left_pad" pos="0 -0.0189 0.01352">
+                            <geom class="pad_box1" name="left_pad1"/>
+                            <geom class="pad_box2" name="left_pad2"/>
+                            <inertial mass="0.0035" pos="0 -0.0025 0.0185" quat="1 0 0 1" diaginertia="4.73958e-07 3.64583e-07 1.23958e-07"/>
+                            <geom name="left_gripper_pad" class="visual" mesh="gripper_pad"/>
+                            <body name="left_silicone_pad">
+                              <geom class="visual" mesh="gripper_silicone_pad" material="black"/>
+                            </body>
+                          </body>
+                        </body>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+
+    </body>
+    <!-- REAL FISH -->
+    <!-- Ghost representing desired pose -->
+      <!-- <body name="ghost" pos="0.6 0.15 0.015" >
+          <geom name="ghost" pos="0 0 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="1" mesh="fish" rgba="0.1 0.8 0.1 1" />
+      </body> -->
+
+    <!-- FAKE FISH (AKA MUG) -->
+    <!-- Ghost representing desired pose -->
+      <body name="ghost" pos="0.6 0.15 0.015" >
+          <geom name="ghost" pos="0 0 0" quat="1 1 0 0" type="mesh" contype="0" conaffinity="0" group="1" mesh="fish" rgba="0.1 0.8 0.1 1" />
+      </body>
+
+  </worldbody>
+
+  <!-- Updated contact exclusions with new body names -->
+  <contact>
+    <exclude body1="gripper_base" body2="left_driver"/>
+    <exclude body1="gripper_base" body2="right_driver"/>
+    <exclude body1="gripper_base" body2="left_spring_link"/>
+    <exclude body1="gripper_base" body2="right_spring_link"/>
+    <exclude body1="right_coupler" body2="right_follower"/>
+    <exclude body1="left_coupler" body2="left_follower"/>
+
+
+    <!-- Fish contacts from fish-->
+    <!-- <pair geom1="wrist1"    geom2="fish" /> -->
+    <!-- <pair geom1="wrist2"    geom2="fish" /> -->
+    <!-- <pair geom1="wrist3"    geom2="fish" /> -->
+    <!-- <pair geom1="upperarm"  geom2="table"  /> -->
+    <!-- <pair geom1="forearm"   geom2="table"  /> -->
+    <!-- <pair geom1="wrist1"    geom2="table"  /> -->
+    <!-- <pair geom1="wrist2"    geom2="table" /> -->
+    <!-- <pair geom1="wrist3"    geom2="table"  /> -->
+    <!-- <pair geom1="table"     geom2="fish" /> -->
+
+
+    <!-- <pair geom1="right_gripper_pad"     geom2="fish" /> -->
+    <!-- <pair geom1="left_gripper_pad"     geom2="fish" /> -->
+    <pair geom1="collision" geom2="fish" />
+    <pair geom1="upperarm"  geom2="table"  />
+    <pair geom1="forearm"   geom2="table"  />
+    <pair geom1="wrist1"    geom2="fish" />
+    <pair geom1="wrist2"    geom2="fish" />
+    <pair geom1="wrist3"    geom2="fish" />
+    <pair geom1="wrist1"    geom2="table"  />
+    <pair geom1="wrist2"    geom2="table" />
+    <pair geom1="wrist3"    geom2="table"  />
+    <pair geom1="table"     geom2="fish" />
+
+  </contact>
+
+  <!--
+    This adds stability to the model by having a tendon that distributes the forces between both
+    joints, such that the equality constraint doesn't have to do that much work in order to equalize
+    both joints. Since both joints share the same sign, we split the force between both equally by
+    setting coef=0.5
+  -->
+  <tendon>
+    <fixed name="split">
+      <joint joint="right_driver_joint" coef="0.5"/>
+      <joint joint="left_driver_joint" coef="0.5"/>
+    </fixed>
+  </tendon>
+
+  <!-- Gripper equality constraints -->
+  <equality>
+    <connect anchor="0 0 0" body1="right_follower" body2="right_coupler" solimp="0.95 0.99 0.001" solref="0.005 1"/>
+    <connect anchor="0 0 0" body1="left_follower" body2="left_coupler" solimp="0.95 0.99 0.001" solref="0.005 1"/>
+    <joint joint1="right_driver_joint" joint2="left_driver_joint" polycoef="0 1 0 0 0" solimp="0.95 0.99 0.001" solref="0.005 1"/>
+  </equality>
+
+  <actuator>
+    <!-- UR3e actuators -->
+    <motor name="shoulder_pan_motor" joint="shoulder_pan_joint" ctrllimited="true" ctrlrange="-330 330"/>
+    <motor name="shoulder_lift_motor" joint="shoulder_lift_joint" ctrllimited="true" ctrlrange="-330 330"/>
+    <motor name="elbow_motor" joint="elbow_joint" ctrllimited="true" ctrlrange="-150 150"/>
+    <motor name="wrist_1_motor" joint="wrist_1_joint" ctrllimited="true" ctrlrange="-54 54"/>
+    <motor name="wrist_2_motor" joint="wrist_2_joint" ctrllimited="true" ctrlrange="-54 54"/>
+    <motor name="wrist_3_motor" joint="wrist_3_joint" ctrllimited="true" ctrlrange="-54 54"/>
+    
+    <!--
+        The general actuator below is a customized position actuator (with some damping) where
+        gainprm[0] != kp (see http://mujoco.org/book/modeling.html#position).
+        The reason why gainprm[0] != kp is because the control input range has to be re-scaled to
+        [0, 255]. The joint range is currently set at [0, 0.8], the control range is [0, 255] and
+        kp = 100. Tau = Kp * scale * control_input - Kp * error, max(Kp * scale * control_input) = 0.8,
+        hence scale = 0.8 * 100 / 255
+    -->
+    <!-- Gripper actuator -->
+    <general class="2f85" name="fingers_actuator" tendon="split" forcerange="-5 5" ctrlrange="0 255" gainprm="0.3137255 0 0" biasprm="0 -100 -10"/>
+  </actuator>
+
+  <sensor>
+    <!-- UR3e sensors -->
+    <torque name="shoulder_pan_torque" site="shoulder_pan_sensor"/>
+    <torque name="shoulder_lift_torque" site="shoulder_lift_sensor"/>
+    <torque name="elbow_torque" site="elbow_sensor"/>
+    <torque name="wrist_1_torque" site="wrist_1_sensor"/>
+    <torque name="wrist_2_torque" site="wrist_2_sensor"/>
+    <torque name="wrist_3_torque" site="wrist_3_sensor"/>
+    <actuatorfrc name="shoulder_pan_actuatorfrc" actuator="shoulder_pan_motor"/>
+    <actuatorfrc name="shoulder_lift_actuatorfrc" actuator="shoulder_lift_motor"/>
+    <actuatorfrc name="elbow_actuatorfrc" actuator="elbow_motor"/>
+    <actuatorfrc name="wrist_1_actuatorfrc" actuator="wrist_1_motor"/>
+    <actuatorfrc name="wrist_2_actuatorfrc" actuator="wrist_2_motor"/>
+    <actuatorfrc name="wrist_3_actuatorfrc" actuator="wrist_3_motor"/>
+  </sensor>
+
+  <!-- <keyframe> -->
+    <!-- <key name="home" qpos="10 0 0 0 0 0 0 0 0 0 0 0 0 0"/> -->
+    <!-- <key name="init_pose" qpos="0 0.25 0.02 1 0 0 0 0.5 -0.75 1.75 -1 -1 0" /> -->
+    <!--<key name="init_pose" qpos="0.4 0.15 0.02 1 0 0 0 0.35 -0.95 2.25 -1.25 1.5 0" />-->
+  <!-- </keyframe> -->
+</mujoco>

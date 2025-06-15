@@ -2,7 +2,7 @@
 
 A Gymnasium environment for the Universal Robots UR3e robotic arm using MuJoCo physics simulation. This environment allows for reinforcement learning and control experiments with the UR3e robot.
 
-<img src="./assets/capture.png" alt="UR3e Robot in MuJoCo simulation" width="400"/>
+<img src="./media/capture.png" alt="UR3e Robot in MuJoCo simulation" width="400"/>
 
 ## Features
 
