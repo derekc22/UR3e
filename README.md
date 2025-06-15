@@ -4,14 +4,6 @@ A Gymnasium environment for the Universal Robots UR3e robotic arm using MuJoCo p
 
 <img src="./media/capture.png" alt="UR3e Robot in MuJoCo simulation" width="400"/>
 
-## Features
-
-- Full UR3e robot simulation with accurate physics using MuJoCo
-- Compatible with the Gymnasium interface for reinforcement learning
-- Configurable action and observation spaces
-- Customizable reward functions
-- Human-readable rendering for visualization
-
 ## Installation
 
 To install the UR3e environment, run the following commands:
@@ -71,16 +63,6 @@ env.close()
 ## Customization
 
 The environment can be customized by modifying the reward function, terminal conditions, or robot model parameters in the `ur3e_env.py` file.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
 
 ## License
 
