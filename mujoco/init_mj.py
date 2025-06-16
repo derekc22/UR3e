@@ -2,7 +2,13 @@ import mujoco
 import mujoco.viewer
 import time
 import numpy as np
-
+from utils import *
+np.set_printoptions(
+    linewidth=200,     # Wider output (default is 75)
+    threshold=np.inf,  # Print entire array, no summarization with ...
+    precision=8,       # Show more decimal places
+    suppress=False     # Do not suppress small floating point numbers
+)
 
 
 def load_model(model_path):
@@ -32,8 +38,14 @@ def main():
     
 
     m, d = load_model(model_path)
+    
+    # ur3e  = 6  nq, 6  nv, 6 nu
+    # 2f85  = 8  nq, 8  nv, 1 nu
+    # mug   = 7  nq, 6  nv, 0 nu
+    # total = 21 nq, 20 nv, 7 nu
 
-    # reset(m, d)
+
+    reset(m, d)
 
     viewer = mujoco.viewer.launch_passive(m, d)
     # python -m mujoco.viewer --mjcf=./model/ur3e.xml
@@ -45,7 +57,14 @@ def main():
         mujoco.mj_step(m, d)
         viewer.sync()
 
-        print("dimensions: ", m.nq)
+        # print("nv: ", m.nq)
+        # print("nq: ", m.nv)
+        # print("nu: ", m.nu)
+        # print("________________")
+
+        print(get_grasp_force(d))
+        print(get_grasp_bool(d))
+
 
         # time.sleep(0.01)
         t = time.time() -  start

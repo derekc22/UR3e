@@ -31,15 +31,14 @@ print(env.metadata)
 
 obs, info = env.reset()
 try:
-    for _ in range(10000000):
+    for _ in range(100000000):
         action = env.action_space.sample()
         obs, reward, terminated, truncated, info = env.step(action)
-        print("action shape: ", action.shape)
-        print("obs shape: ", obs.shape)
+        # print("action shape: ", action.shape)
+        # print("obs shape: ", obs.shape)
+        print(reward)
         if terminated or truncated:
             obs, info = env.reset()
-        # time.sleep(0.1)   
-        # env.render()
 except KeyboardInterrupt:
     pass
 finally:

@@ -91,14 +91,14 @@
   </default>
 
   <worldbody>
-    <light name="spotlight0" mode="targetbodycom" target="robot_base" pos="0 0 10" cutoff="60" castshadow="false"/>
-    <light name="spotlight1" mode="targetbodycom" target="robot_base" pos="0.5 0 10" cutoff="60" castshadow="false"/>
+    <light name="spotlight0" mode="targetbodycom" target="robot_base" pos="0 0 10" cutoff="60"/>
+    <light name="spotlight1" mode="targetbodycom" target="robot_base" pos="0.5 0 10" cutoff="60"/>
     <!-- <geom name="floor" size="0 0 .125" type="plane" material="groundplane" conaffinity="15" condim="3" /> -->
     <geom name="floor" size="0 0 .125" pos="0 0 -.913" type="plane" material="groundplane" conaffinity="15" condim="3" />
 
     <body name="table" pos="0.4 0 0" >
-      <geom name="table" type="plane" size=".5 .6 0.1" group = "1" rgba=".1 .1 .1 1" />
-      <!-- <geom name="table" type="box" size="2 2 0.000001" group = "1" rgba=".1 .1 .1 1" /> -->
+      <geom name="table" type="plane" size="0.5 0.5 0.1" group = "1" rgba=".1 .1 .1 1" />
+      <!-- <geom name="table" type="box" size="0.5 0.5 0.000001" group = "1" rgba=".1 .1 .1 1" /> -->
     </body>
 
     <!-- REAL FISH -->
@@ -110,15 +110,21 @@
     </body> -->
 
     <!-- FAKE FISH (AKA MUG) -->
-    <body name="fish" pos="0.4 0.1 0.02" quat="1 0 0 0" >
+    <body name="fish" pos="0.5 -0.15 0" quat="0 0 -0.7071 -0.7071" >
       <joint name="fish" type="free" limited="false"/>
-        <geom name="fish" pos="0 0 0" quat="1 0 0 0" type="mesh" group="1" mesh="fish"/>
+      <geom name="fish" pos="0 0 0" quat="1 0 0 0" type="mesh" group="1" mesh="fish"/>
     </body>
+
+    <!-- FAKE FISH (AKA BOX) -->
+    <!-- <body name="fish" pos="0.4 0.1 0.02">
+      <joint name="fish" type="free" limited="false"/>
+      <geom name="fish" type="box" size="0.02 0.02 0.02" mass="0.1" rgba="1 1 1 1"/>
+    </body> -->
 
     <!-- UR3e Arm - renamed base to robot_base -->
     <body name="robot_base" pos="0 0 0">
-      <!-- <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.7 0.7 0.7 1" mesh="base"/>
-      <geom type="mesh" rgba="0.7 0.7 0.7 1" mesh="base"/> -->
+      <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.7 0.7 0.7 1" mesh="base"/>
+      <geom type="mesh" rgba="0.7 0.7 0.7 1" mesh="base"/>
       <body name="shoulder_link" pos="0 0 0.152">      
         <inertial pos="0 0 0" mass="2" diaginertia="0.00809316 0.00809316 0.005625"/>
         <joint name="shoulder_pan_joint" pos="0 0 0" axis="0 0 1" limited="true" range="-3.14159 3.14159" damping="1.0" frictionloss="0.2"/>
@@ -197,6 +203,10 @@
                           <body name="right_pad" pos="0 -0.0189 0.01352">
                             <geom class="pad_box1" name="right_pad1"/>
                             <geom class="pad_box2" name="right_pad2"/>
+                            
+                            <site name="right_pad1_site" pos="0 -0.0026 0.028125" type="box" size="0.011 0.004 0.009375" rgba="0 0 1 1"/>
+                            <!-- <site name="right_pad2_site" pos="0 -0.0026 0.009375" type="box" size="0.011 0.004 0.009375" rgba="0 0 1 1"/> -->
+                            
                             <inertial mass="0.0035" pos="0 -0.0025 0.0185" quat="0.707107 0 0 0.707107" diaginertia="4.73958e-07 3.64583e-07 1.23958e-07"/>
                             <geom class="visual" mesh="gripper_pad"/>
                             <body name="right_silicone_pad">
@@ -231,6 +241,11 @@
                           <body name="left_pad" pos="0 -0.0189 0.01352">
                             <geom class="pad_box1" name="left_pad1"/>
                             <geom class="pad_box2" name="left_pad2"/>
+                            
+                            <site name="left_pad1_site" pos="0 -0.0026 0.028125" type="box" size="0.011 0.004 0.009375" rgba="0 0 1 1"/>
+                            <!-- <site name="left_pad2_site" pos="0 -0.0026 0.009375" type="box" size="0.011 0.004 0.009375" rgba="0 0 1 1"/> -->
+
+
                             <inertial mass="0.0035" pos="0 -0.0025 0.0185" quat="1 0 0 1" diaginertia="4.73958e-07 3.64583e-07 1.23958e-07"/>
                             <geom name="left_gripper_pad" class="visual" mesh="gripper_pad"/>
                             <body name="left_silicone_pad">
@@ -257,9 +272,14 @@
 
     <!-- FAKE FISH (AKA MUG) -->
     <!-- Ghost representing desired pose -->
-      <body name="ghost" pos="0.6 0.15 0.015" >
-          <geom name="ghost" pos="0 0 0" quat="1 1 0 0" type="mesh" contype="0" conaffinity="0" group="1" mesh="fish" rgba="0.1 0.8 0.1 1" />
+      <body name="ghost" pos="0.7 0.15 0" >
+          <geom name="ghost" pos="0 0 0" quat="0 0 -0.7071 -0.7071" type="mesh" contype="0" conaffinity="0" group="1" mesh="fish" rgba="0.1 0.8 0.1 1" />
       </body>
+
+    <!-- FAKE FISH (AKA BOX)
+    <body name="ghost" pos="0.6 0.15 0.015" >
+      <geom name="ghost" type="box" size="0.02 0.02 0.02" pos="0 0 0" quat="1 1 0 0" contype="0" conaffinity="0" group="1" rgba="0.1 0.8 0.1 1" />
+    </body> -->
 
   </worldbody>
 
@@ -271,9 +291,11 @@
     <exclude body1="gripper_base" body2="right_spring_link"/>
     <exclude body1="right_coupler" body2="right_follower"/>
     <exclude body1="left_coupler" body2="left_follower"/>
+    <!-- NEEDED FOR BASE IN ORDER TO PROPERLY ROTATE! -->
+    <exclude body1="robot_base" body2="shoulder_link"/>
 
 
-    <!-- Fish contacts from fish-->
+    <!-- Contacts from fish-->
     <!-- <pair geom1="wrist1"    geom2="fish" /> -->
     <!-- <pair geom1="wrist2"    geom2="fish" /> -->
     <!-- <pair geom1="wrist3"    geom2="fish" /> -->
@@ -285,8 +307,6 @@
     <!-- <pair geom1="table"     geom2="fish" /> -->
 
 
-    <!-- <pair geom1="right_gripper_pad"     geom2="fish" /> -->
-    <!-- <pair geom1="left_gripper_pad"     geom2="fish" /> -->
     <pair geom1="collision" geom2="fish" />
     <pair geom1="upperarm"  geom2="table"  />
     <pair geom1="forearm"   geom2="table"  />
@@ -297,6 +317,11 @@
     <pair geom1="wrist2"    geom2="table" />
     <pair geom1="wrist3"    geom2="table"  />
     <pair geom1="table"     geom2="fish" />
+
+
+    <!-- <pair geom1="left_pad1" geom2="right_pad1"/> -->
+    <!-- <pair geom1="left_pad2" geom2="right_pad2"/> -->
+    <!-- <pair geom1="left_gripper_pad" geom2="right_gripper_pad"/> -->
 
   </contact>
 
@@ -349,17 +374,25 @@
     <torque name="wrist_1_torque" site="wrist_1_sensor"/>
     <torque name="wrist_2_torque" site="wrist_2_sensor"/>
     <torque name="wrist_3_torque" site="wrist_3_sensor"/>
+
     <actuatorfrc name="shoulder_pan_actuatorfrc" actuator="shoulder_pan_motor"/>
     <actuatorfrc name="shoulder_lift_actuatorfrc" actuator="shoulder_lift_motor"/>
     <actuatorfrc name="elbow_actuatorfrc" actuator="elbow_motor"/>
     <actuatorfrc name="wrist_1_actuatorfrc" actuator="wrist_1_motor"/>
     <actuatorfrc name="wrist_2_actuatorfrc" actuator="wrist_2_motor"/>
     <actuatorfrc name="wrist_3_actuatorfrc" actuator="wrist_3_motor"/>
+
+
+    <!-- 2f85 sensors -->
+    <touch name="right_pad1_contact" site="right_pad1_site"/>
+    <!-- <touch name="right_pad2_contact" site="right_pad2_site"/> -->
+    <touch name="left_pad1_contact" site="left_pad1_site"/>
+    <!-- <touch name="left_pad2_contact" site="left_pad2_site"/> -->
+
+    <actuatorfrc name="fingers_actuatorfrc" actuator="fingers_actuator"/>
   </sensor>
 
-  <!-- <keyframe> -->
-    <!-- <key name="home" qpos="10 0 0 0 0 0 0 0 0 0 0 0 0 0"/> -->
-    <!-- <key name="init_pose" qpos="0 0.25 0.02 1 0 0 0 0.5 -0.75 1.75 -1 -1 0" /> -->
-    <!--<key name="init_pose" qpos="0.4 0.15 0.02 1 0 0 0 0.35 -0.95 2.25 -1.25 1.5 0" />-->
-  <!-- </keyframe> -->
+  <keyframe>
+    <key name="home" qpos="0.5 -0.15 0 0 0 -0.7071 -0.7071 0 0 0 0 0 0 0 0 0 0 0 0 0 0"/>
+  </keyframe>
 </mujoco>
