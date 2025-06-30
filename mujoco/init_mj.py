@@ -32,20 +32,22 @@ def main():
     # model_path = "assets/ur3e/ur3e.xml"
     # model_path = "assets/ur3e_raw.xml"
     # model_path = "assets/2f85/2f85.xml"
-    model_path = "assets/main.xml"
+    # model_path = "assets/main.xml"
     # model_path = "assets/mug/mug.xml"
     # model_path = "assets/ur3e_fish.xml"
+    model_path = "assets/ur3e_2f85.xml"
+    
     
 
     m, d = load_model(model_path)
     
+    # mug   = 7  nq, 6  nv, 0 nu
     # ur3e  = 6  nq, 6  nv, 6 nu
     # 2f85  = 8  nq, 8  nv, 1 nu
-    # mug   = 7  nq, 6  nv, 0 nu
     # total = 21 nq, 20 nv, 7 nu
 
 
-    reset(m, d)
+    # reset(m, d)
 
     viewer = mujoco.viewer.launch_passive(m, d)
     # python -m mujoco.viewer --mjcf=./model/ur3e.xml
@@ -57,13 +59,16 @@ def main():
         mujoco.mj_step(m, d)
         viewer.sync()
 
-        # print("nv: ", m.nq)
-        # print("nq: ", m.nv)
+        # print("nq:", m.nq, " nv:", m.nv, " nu:", m.nu)
+        print(d.site("right_pad1_site").xpos.copy())
+        
+        # print("nq: ", m.nq)
+        # print("nv: ", m.nv)
         # print("nu: ", m.nu)
         # print("________________")
 
-        print(get_grasp_force(d))
-        print(get_grasp_bool(d))
+        # print(get_grasp_force(d))
+        # print(get_grasp_bool(d))
 
 
         # time.sleep(0.01)
