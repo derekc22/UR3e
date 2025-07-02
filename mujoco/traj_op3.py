@@ -67,7 +67,6 @@ def plot_trajectory(traj_target, traj):
 
     mean_pos_errs = np.mean(pos_errs, axis=0)
     mean_rot_errs = np.mean(rot_errs, axis=0)
-
     title = (
         f"mean_xpos_err:  {mean_pos_errs[0]:.3g}, "
         f"mean_ypos_err:  {mean_pos_errs[1]:.3g}, "
@@ -76,12 +75,12 @@ def plot_trajectory(traj_target, traj):
         f"mean_pitch_err: {mean_rot_errs[1]:.3g}, "
         f"mean_yaw_err:   {mean_rot_errs[2]:.3g}"
     )
-
     plt.suptitle(title)
+    
     axes[7].set_visible(False)
     axes[8].set_visible(False)
     plt.tight_layout()    
-    plt.savefig("plots.jpg")
+    plt.savefig("./plots.jpg")
         
         
     
@@ -124,7 +123,7 @@ def build_discretized_trajectory(n, hold=1):
         load_trajectory_file()
     ], axis=0)
 
-    # num_rows, num_cols = traj.shape
+    num_rows, num_cols = traj.shape
 
     # Interpolation factors: [1/(n+1), 2/(n+1), ..., n/(n+1)]
     alphas = np.linspace(0, 1, n + 2)[1:-1]  # exclude 0 and 1
@@ -132,8 +131,7 @@ def build_discretized_trajectory(n, hold=1):
     # Temporary list to hold the final trajectory
     result = []
 
-    # for i in range(num_rows - 1):
-    for i in range(T - 1):
+    for i in range(num_rows - 1):
         start = traj[i]
         end = traj[i + 1]
 
