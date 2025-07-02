@@ -3,10 +3,12 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 import matplotlib
-from utils import euler_to_R, R_to_euler, get_xpos, get_xrot
+from utils import euler_to_R, R_to_euler, get_xpos, get_xrot, get_grip_ctrl
 matplotlib.use('Agg')  # Set backend to non-interactive
 import yaml
-np.set_printoptions(precision=3, linewidth=300)
+from datetime import datetime
+import os
+np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 
 
     
@@ -14,8 +16,7 @@ def get_state(m, d):
     
     _, pos_2f85 = get_xpos(m, d, "right_pad1_site")
     _, rot_2f85 = get_xrot(m, d, "right_pad1_site")
-
-    grip_2f85 = np.array([0]) # UPDATE THIS ONCE GRIPPER IS IMPLEMENTED
+    grip_2f85 = np.array([0]) #get_grip_ctrl(d)
 
     return np.concatenate([
         pos_2f85, rot_2f85, grip_2f85
@@ -33,7 +34,6 @@ def plot_trajectory(traj_target, traj):
     pos_2f85_target = traj_target[:, :3]
     pos_2f85_traj = traj[:, :3]
     
-
     for i in range(3):
         ax = axes[i]
         j = i
@@ -62,6 +62,12 @@ def plot_trajectory(traj_target, traj):
         ax.set_xlim(left=0)
         # if i == 5:
         ax.legend(loc='upper right')
+        
+
+    ax = axes[6]
+    ax.plot(t, traj_target[:, 6],'C0', label="target")
+    ax.set_title("grip")
+    ax.set_xlim(left=0)
 
 
 
@@ -80,7 +86,7 @@ def plot_trajectory(traj_target, traj):
     axes[7].set_visible(False)
     axes[8].set_visible(False)
     plt.tight_layout()    
-    plt.savefig("./plots.jpg")
+    plt.savefig(f"mujoco/logs/{dtn}/plot.jpg")
         
         
     
@@ -165,11 +171,17 @@ def build_trajectory(hold=1):
 
 
 def ctrl(t, m, d, traj_i):
-    pos_torques = pd_ctrl(t, m, d, traj_i[:3], pos_err, pos_gains, tot_pos_joint_errs)    
-    rot_torques = pd_ctrl(t, m, d, traj_i[3:12], rot_err, rot_gains, tot_rot_joint_errs)  # rotation matrix
+    pos_u = pd_ctrl(t, m, d, traj_i[:3], pos_err, pos_gains, tot_pos_joint_errs)    
+    rot_u = pd_ctrl(t, m, d, traj_i[3:12], rot_err, rot_gains, tot_rot_joint_errs)  # rotation matrix
     
-    return pos_torques + rot_torques
+    grip_u = grip_ctrl(m, traj_i[-1])
+    
+    return np.hstack([pos_u + rot_u, grip_u])
 
+
+def grip_ctrl(m, traj_i):
+    ctrl_range = m.actuator_ctrlrange[-1] # 'fingers_actuator' is the last actuator
+    return traj_i*ctrl_range[1] 
 
 
 def pos_err(t, m, d, xpos_target):
@@ -182,7 +194,7 @@ def pos_err(t, m, d, xpos_target):
     update_errs(t, pos_errs, xpos_delta)
 
     # Get arm joints and their velocity addresses
-    ur3e_joint_indices = np.arange(num_joints)
+    ur3e_joint_indices = np.arange(NUM_JOINTS)
 
     # Compute full Jacobian and extract columns for arm joints
     Jp = np.zeros((3, m.nv))
@@ -238,7 +250,7 @@ def rot_err(t, m, d, xrot_target):
 
 
     # Get arm joints and their velocity addresses
-    ur3e_joint_indices = np.arange(num_joints)
+    ur3e_joint_indices = np.arange(NUM_JOINTS)
 
     # Compute full Jacobian and extract columns for arm joints
     Jr = np.zeros((3, m.nv))
@@ -258,11 +270,11 @@ def pd_ctrl(t, m, d, target, err_func, gains, tot_joint_errs):
     
     theta_delta = err_func(t, m, d, target)
     
-    torques = np.zeros((num_joints, ))
+    u = np.zeros((NUM_JOINTS, ))
     
     kp, kd, ki = gains.values()
     
-    for i in range(num_joints):  # 6 joints
+    for i in range(NUM_JOINTS):  # 6 joints
 
         # Get current state
         curr_joint_angle = d.qpos[i]
@@ -284,9 +296,9 @@ def pd_ctrl(t, m, d, target, err_func, gains, tot_joint_errs):
         
         update_joint_errs(i, tot_joint_errs, err)
         torque = kp[i] * err + kd[i] * -curr_joint_vel + ki[i]*tot_joint_errs[i]*dt # pid
-        torques[i] = torque
+        u[i] = torque
 
-    return torques
+    return u
 
 
 def update_errs(t, errs, err):
@@ -298,10 +310,14 @@ def update_joint_errs(i, tot_joint_errs, joint_err):
 
 
 
-with open("mujoco/gains2.yml", "r") as f: yml = yaml.safe_load(f)
-    
+dtn = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+os.makedirs(f"mujoco/logs/{dtn}", exist_ok=True)
+
+with open("mujoco/config.yml", "r") as f: yml = yaml.safe_load(f)
 pos_gains = yml["pos"]
 rot_gains = yml["rot"]
+hold = yml["hold"]
+n = yml["n"]
 
 # ur3e  = 6  nq, 6  nv, 6 nu
 # 2f85  = 8  nq, 8  nv, 1 nu
@@ -309,16 +325,18 @@ rot_gains = yml["rot"]
 model_path = "assets/ur3e_2f85.xml"
 m, d = load_model(model_path)
 dt = m.opt.timestep
-num_joints = 6
+NUM_JOINTS = 6
 
-# traj_target = build_trajectory(hold=200)
-traj_target = build_discretized_trajectory(n=100, hold=100)
+traj_target = build_discretized_trajectory(n=n, hold=hold) if n else build_trajectory(hold=hold)
 T = traj_target.shape[0]
 
 pos_errs = np.zeros(shape=(T, 3))
 rot_errs = np.zeros(shape=(T, 9))
-tot_pos_joint_errs = np.zeros(num_joints)
-tot_rot_joint_errs = np.zeros(num_joints)
+grip_errs = np.zeros(shape=(T, 1))
+tot_pos_joint_errs = np.zeros(NUM_JOINTS)
+tot_rot_joint_errs = np.zeros(NUM_JOINTS)
+
+
 
 def main():
     
@@ -329,21 +347,24 @@ def main():
     t = 0
     while t < T:
  
-        d.ctrl[:-1] = ctrl(t, m, d, traj_target[t, :])
+        d.ctrl = ctrl(t, m, d, traj_target[t, :])
+        # print(traj_target)
 
         mujoco.mj_step(m, d)
         viewer.sync()
         
         traj_true[t] = get_state(m, d)
         
-        print(f"pos_target:{traj_target[t, :3]}, pos_true:{traj_true[t, :3]}, pos_err: {pos_errs[t, :]}")
-        print(f"rot_target:{R_to_euler(traj_target[t, 3:12].reshape(3, 3))}, rot_true:{R_to_euler(traj_true[t, 3:12].reshape(3, 3))}, rot_err: {R_to_euler(rot_errs[t, :].reshape(3, 3))}")
+        print(f"pos_target: {traj_target[t, :3]}, pos_true: {traj_true[t, :3]}, pos_err: {pos_errs[t, :]}")
+        print(f"rot_target: {R_to_euler(traj_target[t, 3:12].reshape(3, 3))}, rot_true: {R_to_euler(traj_true[t, 3:12].reshape(3, 3))}, rot_err: {R_to_euler(rot_errs[t, :].reshape(3, 3))}")
+        print(f"grip_target: {traj_target[t, -1]}")
         print("------------------------------------------------------------------------------------------")
         
         t += 1
         time.sleep(0.01)
 
     plot_trajectory(traj_target, traj_true)
+    with open(f"mujoco/logs/{dtn}/log.yml", 'w') as f: yaml.dump(yml, f)
         
         
     

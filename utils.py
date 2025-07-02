@@ -131,3 +131,8 @@ def get_xpos(m, d, site):
 def get_xrot(m, d, site):
     site_id = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_SITE, site)
     return site_id, d.site(site_id).xmat
+
+
+def get_grip_ctrl(d):    
+    print(d.sensor("fingers_actuatorfrc").data)
+    return d.sensor("fingers_actuatorfrc").data # actuatorfrc (0, 255)
