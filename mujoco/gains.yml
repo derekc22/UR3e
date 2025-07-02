@@ -1,0 +1,23 @@
+kp: 
+  - 20 # Shoulder Pan
+  - 150 # Shoulder Lift
+  - 50 # Elbow
+  - 50 # Wrist 1
+  - 50 # Wrist 2
+  - 50 # Wrist 3
+
+kd: 
+  - 5.0 # Shoulder Pan
+  - 15.0 # Shoulder Lift
+  - 1.00 # Elbow
+  - 1.00 # Wrist 1
+  - 1.00 # Wrist 2
+  - 1.00 # Wrist 3
+
+ki:
+  - 5.0 # Shoulder Pan
+  - 17.0 # Shoulder Lift
+  - 1.00 # Elbow
+  - 1.00 # Wrist 1
+  - 1.00 # Wrist 2
+  - 1.00 # Wrist 3

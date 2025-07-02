@@ -1,0 +1,49 @@
+pos:
+  kp: 
+    - 20 # Shoulder Pan
+    - 150 # Shoulder Lift
+    - 50 # Elbow
+    - 50 # Wrist 1
+    - 50 # Wrist 2
+    - 50 # Wrist 3
+
+  kd: 
+    - 5.0 # Shoulder Pan
+    - 15.0 # Shoulder Lift
+    - 1.00 # Elbow
+    - 1.00 # Wrist 1
+    - 1.00 # Wrist 2
+    - 1.00 # Wrist 3
+
+  ki:
+    - 5.0 # Shoulder Pan
+    - 17.0 # Shoulder Lift
+    - 1.00 # Elbow
+    - 1.00 # Wrist 1
+    - 1.00 # Wrist 2
+    - 1.00 # Wrist 3
+
+rot:
+  kp: 
+    - 7.00 # Shoulder Pan
+    - 7.00 # Shoulder Lift
+    - 7.00 # Elbow
+    - 250 # Wrist 1
+    - 250 # Wrist 2
+    - 250 # Wrist 3
+
+  kd: 
+    - 3.00 # Shoulder Pan
+    - 3.00 # Shoulder Lift
+    - 3.00 # Elbow
+    - 5.00 # Wrist 1
+    - 5.00 # Wrist 2
+    - 5.00 # Wrist 3
+
+  ki:
+    - 7.00 # Shoulder Pan
+    - 7.00 # Shoulder Lift
+    - 7.00 # Elbow
+    - 10.0 # Wrist 1
+    - 10.0 # Wrist 2
+    - 10.0 # Wrist 3
