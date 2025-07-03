@@ -113,6 +113,7 @@ def ctrl(t, m, d, traj_i):
     
     return np.hstack([
         pos_u + rot_u, 
+        # rot_u, 
         grip_u
     ])
 
@@ -155,7 +156,7 @@ def rot_err(t, m, d, xrot_target):
     
     sensor_site_2f85, xrot_2f85 = get_xrot(m, d, "right_pad1_site") 
     xrot_2f85 = xrot_2f85.reshape(3, 3)
-    # convert xrot_target from body frame-relative to global frame-relative by pre-multiplying by xrot_2f85
+    # convert xrot_target from body frame relative to global frame relative by pre-multiplying by  xrot_2f85
     xrot_target = xrot_2f85 @ xrot_target.reshape(3, 3) 
     
     # #########################################################################################################################
@@ -374,14 +375,15 @@ def main():
     try:
         for t in range (T):
     
-            d.ctrl = ctrl(t, m, d, traj_target[t, :])
+            # d.ctrl = ctrl(t, m, d, traj_target[t, :])
+            ctrl(t, m, d, traj_target[t, :])
 
             mujoco.mj_step(m, d)
             viewer.sync()
             
             traj_true[t] = get_state(m, d)
             
-            print(f"pos_target: {traj_target[t, :3]}, pos_true: {traj_true[t, :3]}, pos_err: {pos_errs[t, :]}")
+            # print(f"pos_target: {traj_target[t, :3]}, pos_true: {traj_true[t, :3]}, pos_err: {pos_errs[t, :]}")
             print(f"rot_target: {R_to_euler(traj_target[t, 3:12].reshape(3, 3))}, rot_true: {R_to_euler(traj_true[t, 3:12].reshape(3, 3))}, rot_err: {R_to_euler(rot_errs[t, :].reshape(3, 3))}")
             print(f"grip_target: {traj_target[t, -1]}")
             print("------------------------------------------------------------------------------------------")
@@ -393,7 +395,7 @@ def main():
     
     finally:
         viewer.close()
-        cleanup()
+        # cleanup()
 
         
         

@@ -4,3 +4,4 @@
 **/*.obj
 **/__pycache__
 ur3e_tensorboard/*
+mujoco/logs

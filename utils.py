@@ -84,6 +84,7 @@ def euler_to_quaternion(euler_angles):
 def euler_to_R(euler_angles):
     
     """Convert Euler angles (radians) to ZYX (yaw-pitch-roll) rotation matrix."""
+    # Note, angles are passed as roll, pitch, yaw, but R is constructued as R = RZ @ RY @ RX (roll first, pitch second, yaw last)
     
     roll, pitch, yaw = euler_angles
     
@@ -112,7 +113,7 @@ def R_to_euler(R):
         pitch = np.pi / 2 if R[2, 0] == -1 else -np.pi / 2
         roll = 0
         yaw = np.arctan2(R[0, 1], R[0, 2]) if R[2, 0] == -1 else np.arctan2(-R[0, 1], -R[0, 2])
-    return np.array([yaw, pitch, roll])  # ZYX order
+    return np.array([roll, pitch, yaw])  # XYZ order
 
 
 
@@ -134,5 +135,5 @@ def get_xrot(m, d, site):
 
 
 def get_grip_ctrl(d):    
-    print(d.sensor("fingers_actuatorfrc").data)
-    return d.sensor("fingers_actuatorfrc").data # actuatorfrc (0, 255)
+    # print(d.sensor("fingers_actuatorfrc").data)
+    return d.sensor("fingers_actuatorfrc").data # actuatorfrc (0, 255) ???

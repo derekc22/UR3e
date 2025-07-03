@@ -4,7 +4,7 @@ import time
 import numpy as np
 from utils import *
 np.set_printoptions(
-    linewidth=200,     # Wider output (default is 75)
+    linewidth=400,     # Wider output (default is 75)
     threshold=np.inf,  # Print entire array, no summarization with ...
     precision=8,       # Show more decimal places
     suppress=False     # Do not suppress small floating point numbers
@@ -50,6 +50,9 @@ def main():
     # reset(m, d)
 
     viewer = mujoco.viewer.launch_passive(m, d)
+    viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
+
+
     # python -m mujoco.viewer --mjcf=./model/ur3e.xml
 
     start = time.time()
@@ -60,8 +63,10 @@ def main():
         viewer.sync()
 
         # print("nq:", m.nq, " nv:", m.nv, " nu:", m.nu)
-        print(d.site("right_pad1_site").xpos.copy())
+        # print(R_to_euler(d.site("right_pad1_site").xmat.reshape(3, 3)))
         
+        # print(d.qpos[0:3])
+
         # print("nq: ", m.nq)
         # print("nv: ", m.nv)
         # print("nu: ", m.nu)
