@@ -27,8 +27,6 @@ pos:
 
 
 
-
-
 rot:
   kp: 
     - 0.02 # Shoulder Pan

@@ -106,13 +106,14 @@ def build_trajectory(hold=1):
 
 
 def ctrl(t, m, d, traj_i):
-    pos_u = pd_ctrl(t, m, d, traj_i[:3], pos_err, pos_gains, tot_pos_joint_errs)    
+    # pos_u = pd_ctrl(t, m, d, traj_i[:3], pos_err, pos_gains, tot_pos_joint_errs)    
     rot_u = pd_ctrl(t, m, d, traj_i[3:12], rot_err, rot_gains, tot_rot_joint_errs)  # rotation matrix
 
     grip_u = grip_ctrl(m, traj_i[-1])
     
     return np.hstack([
-        pos_u + rot_u, 
+        # pos_u + rot_u, 
+        rot_u, 
         grip_u
     ])
 
@@ -156,6 +157,7 @@ def rot_err(t, m, d, xrot_target):
     sensor_site_2f85, xrot_2f85 = get_xrot(m, d, "right_pad1_site") 
     xrot_2f85 = xrot_2f85.reshape(3, 3)
     # convert xrot_target from body frame-relative to global frame-relative by pre-multiplying by xrot_2f85
+    
     xrot_target = xrot_2f85 @ xrot_target.reshape(3, 3) 
     
     # #########################################################################################################################
@@ -249,7 +251,11 @@ def rot_err(t, m, d, xrot_target):
 
 
     # update_errs(t, rot_errs, R_err.flatten())
-    update_errs(t, rot_errs, (np.linalg.pinv(xrot_2f85)@R_err).flatten())
+    # update_errs(t, rot_errs, (np.linalg.pinv(xrot_2f85) @ R_err).flatten())
+    # update_errs(t, rot_errs, (xrot_2f85.T @ R_err).flatten())
+    
+    R_err = xrot_target @ (xrot_2f85.T @ xrot_2f85.T) 
+    # print(np.linalg.pinv(xrot_2f85)@   ( xrot_2f85@xrot_target @ xrot_2f85.T  )     ).flatten())
 
     # Get arm joints and their velocity addresses
     ur3e_joint_indices = np.arange(num_joints)
@@ -381,9 +387,9 @@ def main():
             
             traj_true[t] = get_state(m, d)
             
-            print(f"pos_target: {traj_target[t, :3]}, pos_true: {traj_true[t, :3]}, pos_err: {pos_errs[t, :]}")
+            # print(f"pos_target: {traj_target[t, :3]}, pos_true: {traj_true[t, :3]}, pos_err: {pos_errs[t, :]}")
             print(f"rot_target: {R_to_euler(traj_target[t, 3:12].reshape(3, 3))}, rot_true: {R_to_euler(traj_true[t, 3:12].reshape(3, 3))}, rot_err: {R_to_euler(rot_errs[t, :].reshape(3, 3))}")
-            print(f"grip_target: {traj_target[t, -1]}")
+            # print(f"grip_target: {traj_target[t, -1]}")
             print("------------------------------------------------------------------------------------------")
             
             # time.sleep(0.01)

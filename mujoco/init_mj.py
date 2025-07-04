@@ -50,7 +50,8 @@ def main():
     # reset(m, d)
 
     viewer = mujoco.viewer.launch_passive(m, d)
-    viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
+    # viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
+    viewer.opt.frame = mujoco.mjtFrame.mjFRAME_BODY
 
 
     # python -m mujoco.viewer --mjcf=./model/ur3e.xml
