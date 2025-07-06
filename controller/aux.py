@@ -4,14 +4,18 @@ import yaml
 import shutil
 import os
 from datetime import datetime
-from mujoco.plot import plot_trajectory_l, plot_trajectory_j, plot_2d_trajectory, plot_3d_trajectory
-from utils import axis_angle_to_R
+from controller.plot import *
 
 
-def cleanup(traj_target, traj_true, T, 
-            trajectory_fpath, log_fpath, yml,
-            ctrl_mode, **kwargs
-        ):
+def cleanup(traj_target: np.array, 
+            traj_true: np.array,
+            ctrls: np.array,
+            actuator_frc: np.array,
+            trajectory_fpath: str, 
+            log_fpath: str, 
+            yml: dict,
+            ctrl_mode: str, 
+            **kwargs: any) -> None:
 
     dtn = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     save_fpath = log_fpath + dtn
@@ -19,19 +23,21 @@ def cleanup(traj_target, traj_true, T,
     
     if ctrl_mode in ("l", "l_task"):
         pos_errs, rot_errs = (kwargs.get("pos_errs"), kwargs.get("rot_errs"))
-        plot_trajectory_l(traj_target, traj_true, pos_errs, rot_errs, T, save_fpath)
+        plot_trajectory_l(traj_target, traj_true, pos_errs, rot_errs, save_fpath)
         plot_3d_trajectory(traj_target, traj_true, pos_errs, save_fpath)
         plot_2d_trajectory(traj_target, traj_true, pos_errs, save_fpath)
     else:
         qpos_errs = kwargs.get("qpos_errs")
-        plot_trajectory_j(traj_target, traj_true, qpos_errs, T, save_fpath)
+        plot_trajectory_j(traj_target, traj_true, qpos_errs, save_fpath)
+        
+    plot_ctrl(ctrls, actuator_frc, save_fpath)
         
     with open(f"{save_fpath}/log.yml", 'w') as f: yaml.dump(yml, f)
     shutil.copy(trajectory_fpath, save_fpath)
 
 
 
-def load_trajectory_file(trajectory_fpath):
+def load_trajectory_file(trajectory_fpath: str) -> np.array:
     return np.genfromtxt(
         trajectory_fpath, 
         delimiter=',', 
@@ -42,7 +48,9 @@ def load_trajectory_file(trajectory_fpath):
     
 
 
-def build_interpolated_trajectory(n, hold, trajectory_fpath):
+def build_interpolated_trajectory(n: int, 
+                                  hold: int, 
+                                  trajectory_fpath: str) -> np.array:
     
     traj = np.concatenate([
         np.zeros(shape=(1, 13)),
@@ -77,7 +85,8 @@ def build_interpolated_trajectory(n, hold, trajectory_fpath):
 
 
 
-def build_trajectory(hold, trajectory_fpath):
+def build_trajectory(hold: int, 
+                     trajectory_fpath: str) -> np.array:
     return np.repeat(
         load_trajectory_file(trajectory_fpath),
         hold, axis=0)

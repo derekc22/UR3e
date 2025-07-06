@@ -1,8 +1,8 @@
 <mujoco model="ur3e_with_gripper">
   <!-- <compiler angle="radian" meshdir="./" texturedir="./ur3e/mesh/visual/" autolimits="true"/> -->
   <compiler angle="radian" meshdir="./" autolimits="true"/>
-  <option cone="elliptic" impratio="10" timestep="0.001" gravity="0 0 -9.81"/>
-  <!-- <option cone="elliptic" impratio="10" timestep="0.001" gravity="0 0 0"/> -->
+  <!-- <option cone="elliptic" impratio="10" timestep="0.001" gravity="0 0 -9.81"/> -->
+  <option cone="elliptic" impratio="10" timestep="0.001" gravity="0 0 0"/>
   <size njmax="500" nconmax="100"/>
   
   <visual>

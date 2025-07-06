@@ -17,15 +17,6 @@ pos:
     - 5.00 # Wrist 2
     - 20.0 # Wrist 3
 
-  ki:
-    - 5.00 # Shoulder Pan
-    - 5.00 # Shoulder Lift
-    - 2.00 # Elbow
-    - 2.00 # Wrist 1
-    - 2.00 # Wrist 2
-    - 1.50 # Wrist 3
-
-
 
 rot:
   kp: 
@@ -43,11 +34,3 @@ rot:
     - 5.0 # Wrist 1
     - 5.0 # Wrist 2
     - 5.0 # Wrist 3
-
-  ki:
-    - 0.02 # Shoulder Pan
-    - 0.05 # Shoulder Lift
-    - 0.10 # Elbow
-    - 0.50 # Wrist 1
-    - 0.10 # Wrist 2
-    - 0.50 # Wrist 3

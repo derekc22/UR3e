@@ -11,21 +11,6 @@ np.set_printoptions(
 )
 
 
-def load_model(model_path):
-    m = mujoco.MjModel.from_xml_path(model_path)
-    d = mujoco.MjData(m)
-
-    return m, d
-
-
-def reset(m, d, intialization='home'):
-    init_qp = np.array(m.keyframe(intialization).qpos)
-    mujoco.mj_resetData(m, d) 
-    d.qpos[:] = init_qp
-    mujoco.mj_step(m, d)
-
-
-
 
 def main():
 

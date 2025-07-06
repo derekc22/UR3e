@@ -1,6 +1,7 @@
 import numpy as np
 import mujoco
 from scipy.spatial.transform import Rotation as R
+from typing import Callable
 
 
 
@@ -14,7 +15,6 @@ def get_joint_torques(d):
         "wrist_3_actuatorfrc",
         "fingers_actuatorfrc"
     ]
-    # return { joint : float(d.sensor(joint).data[0]) for joint in joints }
     return np.array([ d.sensor(joint).data[0] for joint in joints ])
 
 
@@ -71,12 +71,12 @@ def euler_to_quaternion(euler_angles):
 ################################################################################################################################################################################################################################################
 
 
-def get_arm_qpos(d):
+def get_arm_qpos(d: mujoco.MjData) -> np.array:
     return d.qpos[:6]
 
 
 
-def load_model(model_path):    
+def load_model(model_path: str) -> tuple[mujoco.MjModel, mujoco.MjData]:    
     m = mujoco.MjModel.from_xml_path(model_path)
     d = mujoco.MjData(m)
     
@@ -97,12 +97,12 @@ def load_model(model_path):
 #     theta_delta = err_func(t, m, d, target_traj)
 #     dt = m.opt.timestep
     
-#     num_joints = 6
-#     u = np.zeros((num_joints, ))
+#     num_ur3e_joints = 6
+#     u = np.zeros((num_ur3e_joints, ))
     
 #     kp, kd, ki = gains.values()
     
-#     for i in range(num_joints):  # 6 arm joints
+#     for i in range(num_ur3e_joints):  # 6 arm joints
 
 #         # Get current state
 #         curr_joint_angle = d.qpos[i]
@@ -128,21 +128,22 @@ def load_model(model_path):
 
 #     return u
 
-def pd_ctrl(t, m, d, 
-            traj_target, 
-            err_func,
-            gains, 
-            joint_ranges,
-            tot_joint_errs,
-            ):
+
+def pd_ctrl(t: int, 
+            m: mujoco.MjModel, 
+            d: mujoco.MjData, 
+            traj_target: np.array, 
+            gains: dict, 
+            err_func: Callable,
+            errs: np.array,
+            jnt_ranges: np.array) -> np.array:
     
-    theta_delta = err_func(t, m, d, traj_target)
-    dt = m.opt.timestep
+    theta_delta = err_func(t, m, d, traj_target, errs)
     
-    num_joints = 6
-    u = np.zeros((num_joints, ))
+    num_ur3e_joints = 6
+    u = np.zeros((num_ur3e_joints, ))
     
-    kp, kd, ki = gains.values()
+    kp, kd = gains.values()
 
     # Get current state
     joint_angles = d.qpos[:6]
@@ -153,37 +154,29 @@ def pd_ctrl(t, m, d,
     
     joint_target_angles = np.clip(
         joint_target_angles, 
-        joint_ranges[:, 0],  # Lower bounds of joint_range
-        joint_ranges[:, 1]   # Upper bounds of joint_range
+        jnt_ranges[:, 0],  # Lower bounds of joint_range
+        jnt_ranges[:, 1]   # Upper bounds of joint_range
     )
     
     # PD torque calculation
     errs = joint_target_angles - joint_angles
-    update_joint_errs(tot_joint_errs, errs)
     
     u = kp @ errs + kd @ -joint_vels # pd
-    # ui = kp @ errs + kd @ -joint_vels + ki @ tot_joint_errs * dt # pid. 
-    # this pid control is actually incorrect because tot_joint_errs should be flushed after each new, non-holding trajectory step
-    # that is, once a particular 'hold' is over and the next trajectory step is reached, tot_joint_errs should be reset to zero
-    # this current implementation accumulates the joint errors over the entire trajectory (across all unique trajectory steps) which is not correct
-    # fix later
 
     return u
 
 
 
-def update_errs(t, errs, err):
+def update_errs(t: int, 
+                errs: np.array, 
+                err: np.array) -> None:
     errs[t] = err
 
-# def update_joint_errs(i, tot_joint_errs, joint_err):
-#     tot_joint_errs[i] += joint_err
-
-def update_joint_errs(tot_joint_errs, joint_errs):
-    tot_joint_errs += joint_errs
 
 
-
-def reset(m, d, intialization='home'):
+def reset(m: mujoco.MjModel, 
+          d: mujoco.MjData, 
+          intialization: str = 'home') -> None :
     init_qp = np.array(m.keyframe(intialization).qpos)
     mujoco.mj_resetData(m, d) 
     d.qpos[:] = init_qp
@@ -277,7 +270,9 @@ def R_to_axis_angle(R):
 
 
 
-def get_xpos(m, d, site):
+def get_xpos(m: mujoco.MjModel, 
+             d: mujoco.MjData, 
+             site: str) -> tuple[int, np.array]:
     site_id = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_SITE, site)
     return site_id, d.site(site_id).xpos
 
@@ -287,7 +282,9 @@ def get_xpos(m, d, site):
 #     xmat = np.array(d.site(site_id).xmat).reshape(3, 3)
 #     return site_id, R.from_matrix(xmat).as_quat()
 
-def get_xrot(m, d, site):
+def get_xrot(m: mujoco.MjModel, 
+             d: mujoco.MjData, 
+             site: str) -> tuple[int, np.array]:
     site_id = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_SITE, site)
     return site_id, d.site(site_id).xmat
 
@@ -298,12 +295,14 @@ def get_grip_ctrl(d):
 
 
 
-def get_gravity_compensation(m, d):
+def get_gravity_compensation(m: mujoco.MjModel,
+                             d: mujoco.MjData) -> np.array:
     """Returns gravity compensation torque for arm joints"""
     return d.qfrc_bias[:6]
 
 
-def grip_ctrl(m, traj_t):
+def grip_ctrl(m: mujoco.MjData, 
+              traj_t: np.array) -> np.array:
     ctrl_range = m.actuator_ctrlrange[-1] # 'fingers_actuator' is the last actuator
     return traj_t * ctrl_range[1] 
 
@@ -353,7 +352,8 @@ def R_to_quaternion(R):
 
 
 
-def get_3D_state(m, d):
+def get_task_space_state(m: mujoco.MjModel, 
+                         d: mujoco.MjData) -> np.array:
     
     _, xpos_2f85 = get_xpos(m, d, "right_pad1_site")
     _, xrot_2f85 = get_xrot(m, d, "right_pad1_site")
@@ -362,4 +362,14 @@ def get_3D_state(m, d):
 
     return np.concatenate([
         xpos_2f85, xrot_2f85, grip_2f85
+    ])
+
+def get_joint_space_state(m: mujoco.MjModel,
+                          d: mujoco.MjData) -> np.array:
+    
+    qpos_ur3e = get_arm_qpos(d)
+    grip_2f85 = get_grasp_force(d)[0:1] #get_grip_ctrl(d)
+
+    return np.concatenate([
+        qpos_ur3e, grip_2f85
     ])

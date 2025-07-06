@@ -8,7 +8,7 @@ np.set_printoptions(
     suppress=False     # Do not suppress small floating point numbers
 )
 
-def gen_traj_l():
+def gen_traj_l() -> None:
 
     # Generate trajectory points
     num_points = 200
@@ -74,14 +74,14 @@ def gen_traj_l():
     })
 
     # Save to CSV
-    df.to_csv("mujoco/data/traj_l.csv", index=False)
+    df.to_csv("controller/data/traj_l.csv", index=False)
     print(f"Generated smooth trajectory with {num_points} points saved to traj_l.csv")
 
 
 
 
 
-def gen_traj_j():
+def gen_traj_j() -> None:
 
     # Generate trajectory points
     num_points = 200
@@ -148,7 +148,7 @@ def gen_traj_j():
     })
 
     # Save to CSV
-    df.to_csv("mujoco/data/traj_j.csv", index=False)
+    df.to_csv("controller/data/traj_j.csv", index=False)
     print(f"Generated smooth trajectory with {num_points} points saved to traj_j.csv")
 
 
