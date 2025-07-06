@@ -1,6 +1,7 @@
-from typing import Tuple, List
 import numpy as np
 import mujoco
+from scipy.spatial.transform import Rotation as R
+
 
 
 def get_joint_torques(d):
@@ -86,53 +87,99 @@ def load_model(model_path):
 
 
 
+# def pd_ctrl(t, m, d, 
+#             target_traj, 
+#             err_func,
+#             gains, 
+#             tot_joint_errs,
+#             ):
+    
+#     theta_delta = err_func(t, m, d, target_traj)
+#     dt = m.opt.timestep
+    
+#     num_joints = 6
+#     u = np.zeros((num_joints, ))
+    
+#     kp, kd, ki = gains.values()
+    
+#     for i in range(num_joints):  # 6 arm joints
+
+#         # Get current state
+#         curr_joint_angle = d.qpos[i]
+#         curr_joint_vel = d.qvel[i]
+        
+#         # Compute target angle with clamping
+#         curr_joint_target_angle = curr_joint_angle + theta_delta[i]
+#         joint_range = m.jnt_range[i]
+
+#         if joint_range[0] < joint_range[1]:  # Check valid limits
+#             curr_joint_target_angle = np.clip(
+#                 curr_joint_target_angle, 
+#                 joint_range[0], joint_range[1]
+#             )
+        
+#         # PD torque calculation
+#         err = curr_joint_target_angle - curr_joint_angle
+#         update_joint_errs(i, tot_joint_errs, err)
+        
+#         ui = kp[i] * err + kd[i] * -curr_joint_vel # pd
+#         # ui = kp[i] * err + kd[i] * -curr_joint_vel + ki[i]*tot_joint_errs[i]*dt # pid
+#         u[i] = ui
+
+#     return u
+
 def pd_ctrl(t, m, d, 
-            target_traj, 
+            traj_target, 
             err_func,
             gains, 
+            joint_ranges,
             tot_joint_errs,
             ):
     
-    theta_delta = err_func(t, m, d, target_traj)
+    theta_delta = err_func(t, m, d, traj_target)
     dt = m.opt.timestep
     
     num_joints = 6
     u = np.zeros((num_joints, ))
     
     kp, kd, ki = gains.values()
+
+    # Get current state
+    joint_angles = d.qpos[:6]
+    joint_vels = d.qvel[:6]
+        
+    # Compute target angle with clamping
+    joint_target_angles = joint_angles + theta_delta
     
-    for i in range(num_joints):  # 6 arm joints
-
-        # Get current state
-        curr_joint_angle = d.qpos[i]
-        curr_joint_vel = d.qvel[i]
-        
-        # Compute target angle with clamping
-        curr_joint_target_angle = curr_joint_angle + theta_delta[i]
-        joint_range = m.jnt_range[i]
-
-        if joint_range[0] < joint_range[1]:  # Check valid limits
-            curr_joint_target_angle = np.clip(
-                curr_joint_target_angle, 
-                joint_range[0], joint_range[1]
-            )
-        
-        # PD torque calculation
-        err = curr_joint_target_angle - curr_joint_angle
-        # torque = kp[i] * err + kd[i] * -curr_joint_vel # pd
-        
-        update_joint_errs(i, tot_joint_errs, err)
-        torque = kp[i] * err + kd[i] * -curr_joint_vel + ki[i]*tot_joint_errs[i]*dt # pid
-        u[i] = torque
+    joint_target_angles = np.clip(
+        joint_target_angles, 
+        joint_ranges[:, 0],  # Lower bounds of joint_range
+        joint_ranges[:, 1]   # Upper bounds of joint_range
+    )
+    
+    # PD torque calculation
+    errs = joint_target_angles - joint_angles
+    update_joint_errs(tot_joint_errs, errs)
+    
+    u = kp @ errs + kd @ -joint_vels # pd
+    # ui = kp @ errs + kd @ -joint_vels + ki @ tot_joint_errs * dt # pid. 
+    # this pid control is actually incorrect because tot_joint_errs should be flushed after each new, non-holding trajectory step
+    # that is, once a particular 'hold' is over and the next trajectory step is reached, tot_joint_errs should be reset to zero
+    # this current implementation accumulates the joint errors over the entire trajectory (across all unique trajectory steps) which is not correct
+    # fix later
 
     return u
+
 
 
 def update_errs(t, errs, err):
     errs[t] = err
 
-def update_joint_errs(i, tot_joint_errs, joint_err):
-    tot_joint_errs[i] += joint_err
+# def update_joint_errs(i, tot_joint_errs, joint_err):
+#     tot_joint_errs[i] += joint_err
+
+def update_joint_errs(tot_joint_errs, joint_errs):
+    tot_joint_errs += joint_errs
 
 
 
@@ -250,3 +297,69 @@ def get_grip_ctrl(d):
     return d.sensor("fingers_actuatorfrc").data # actuatorfrc (0, 255) ???
 
 
+
+def get_gravity_compensation(m, d):
+    """Returns gravity compensation torque for arm joints"""
+    return d.qfrc_bias[:6]
+
+
+def grip_ctrl(m, traj_t):
+    ctrl_range = m.actuator_ctrlrange[-1] # 'fingers_actuator' is the last actuator
+    return traj_t * ctrl_range[1] 
+
+
+
+def R_to_quaternion(R):
+    """
+    Convert a 3x3 rotation matrix to a quaternion (x, y, z, w)
+    
+    Parameters:
+        R : numpy.ndarray
+            A 3x3 rotation matrix
+
+    Returns:
+        tuple: Quaternion (x, y, z, w)
+    """
+    assert R.shape == (3, 3), "Rotation matrix must be 3x3"
+    
+    trace = np.trace(R)
+
+    if trace > 0:
+        S = np.sqrt(trace + 1.0) * 2  # S = 4 * w
+        w = 0.25 * S
+        x = (R[2, 1] - R[1, 2]) / S
+        y = (R[0, 2] - R[2, 0]) / S
+        z = (R[1, 0] - R[0, 1]) / S
+    elif (R[0, 0] > R[1, 1]) and (R[0, 0] > R[2, 2]):
+        S = np.sqrt(1.0 + R[0, 0] - R[1, 1] - R[2, 2]) * 2  # S = 4 * x
+        w = (R[2, 1] - R[1, 2]) / S
+        x = 0.25 * S
+        y = (R[0, 1] + R[1, 0]) / S
+        z = (R[0, 2] + R[2, 0]) / S
+    elif R[1, 1] > R[2, 2]:
+        S = np.sqrt(1.0 + R[1, 1] - R[0, 0] - R[2, 2]) * 2  # S = 4 * y
+        w = (R[0, 2] - R[2, 0]) / S
+        x = (R[0, 1] + R[1, 0]) / S
+        y = 0.25 * S
+        z = (R[1, 2] + R[2, 1]) / S
+    else:
+        S = np.sqrt(1.0 + R[2, 2] - R[0, 0] - R[1, 1]) * 2  # S = 4 * z
+        w = (R[1, 0] - R[0, 1]) / S
+        x = (R[0, 2] + R[2, 0]) / S
+        y = (R[1, 2] + R[2, 1]) / S
+        z = 0.25 * S
+
+    return (x, y, z, w)
+
+
+
+def get_3D_state(m, d):
+    
+    _, xpos_2f85 = get_xpos(m, d, "right_pad1_site")
+    _, xrot_2f85 = get_xrot(m, d, "right_pad1_site")
+    xrot_2f85 = R.from_matrix(xrot_2f85.reshape(3, 3)).as_rotvec()
+    grip_2f85 = get_grasp_force(d)[0:1] #get_grip_ctrl(d)
+
+    return np.concatenate([
+        xpos_2f85, xrot_2f85, grip_2f85
+    ])

@@ -4,76 +4,41 @@ import matplotlib
 from utils import (
     load_model, reset,
     get_xpos, get_xrot, get_3D_state,
-    pd_ctrl, grip_ctrl, update_errs
+    grip_ctrl, update_errs
     )
+from scipy.spatial.transform import Rotation as R
 from gen_traj import gen_traj_l
 from mujoco.aux import build_trajectory, build_interpolated_trajectory
 from aux import cleanup
 matplotlib.use('Agg')  # Set backend to non-interactive
 import yaml
 np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
-from scipy.spatial.transform import Rotation as R
+
 
     
 
 
 
-def ctrl(t, m, d, traj_t):
-    pos_u = pd_ctrl(t, m, d, traj_t[:3], get_pos_err, pos_gains, joint_ranges, tot_pos_joint_errs)    
-    rot_u = pd_ctrl(t, m, d, traj_t[3:6], get_rot_err, rot_gains, joint_ranges, tot_rot_joint_errs)  # rotation matrix
-
-    grip_u = grip_ctrl(m, traj_t[-1])
-    
-    return np.hstack([
-        pos_u + rot_u,
-        # rot_u, 
-        grip_u
-    ])
 
 
+def ctrl(t, m, d, traj_target, pos_gains, rot_gains):
 
-
-def get_pos_err(t, m, d, xpos_target):
-    
     sensor_site_2f85, xpos_2f85 = get_xpos(m, d, "right_pad1_site")
-    
-    # Compute 3D cartesian position error
-    xpos_delta = xpos_target - xpos_2f85
+    _, xrot_2f85 = get_xrot(m, d, "right_pad1_site") 
+    xrot_2f85 = xrot_2f85.reshape(3, 3)
+        
+    # Position error
+    xpos_delta = traj_target[:3] - xpos_2f85
     update_errs(t, pos_errs, xpos_delta)
+    
+    # Orientation error (axis-angle)
+    xrot_target = traj_target[3:6]
 
-    # Get arm joints and their velocity addresses
-    ur3e_joint_indices = np.arange(num_joints)
-
-    # Compute full Jacobian and extract columns for arm joints
-    jacp = np.zeros((3, m.nv))
-    mujoco.mj_jacSite(m, d, jacp, None, sensor_site_2f85)
-    jacp_arm = jacp[:, ur3e_joint_indices]  # Extract relevant columns (3x6)
-
-    jacp_pinv = np.linalg.pinv(jacp_arm)
-
-    # Compute joint angle updates
-    theta_delta = jacp_pinv @ xpos_delta
-    return theta_delta # theta_delta
-    
-    
-    
-
-def get_rot_err(t, m, d, xrot_target):
-    
-    sensor_site_2f85, xrot_2f85 = get_xrot(m, d, "right_pad1_site") 
-    xrot_2f85 = xrot_2f85.reshape(3, 3) # Rgc
-     
-    #########################################################################################################################
-    # Compute rotational error (o3)
-    
-    # R_err = xrot_target @ xrot_2f85.T                 # desired-to-current rotation
-    # skew = 0.5 * (R_err - R_err.T)
-    # xrot_delta =  np.array([skew[2, 1], skew[0, 2], skew[1, 0]])
-    
     # Quaternion approach
     # Convert current and target rotation matrices to quaternions
     q = R.from_matrix(xrot_2f85).as_quat()   # [x, y, z, w]
     q_d = R.from_rotvec(xrot_target).as_quat()
+    # q_d = R.from_matrix(xrot_target).as_quat()
     # Compute the inverse of the current quaternion
     q_inv = R.from_quat(q).inv()
     # Compute the relative quaternion: q_err = q_d * q⁻¹
@@ -82,31 +47,32 @@ def get_rot_err(t, m, d, xrot_target):
     xrot_delta = q_err.as_rotvec()
     update_errs(t, rot_errs, xrot_delta)
 
-    # Get arm joints and their velocity addresses
-    ur3e_joint_indices = np.arange(num_joints)
-
-    # Compute full Jacobian and extract columns for arm joints
-    jacr = np.zeros((3, m.nv))
-    mujoco.mj_jacSite(m, d, None, jacr, sensor_site_2f85)
-    jacr_arm = jacr[:, ur3e_joint_indices]  # Extract relevant columns (3x6)
-
-    jacr_pinv = np.linalg.pinv(jacr_arm)
-
-    # Compute joint angle updates
-
-    theta_delta = jacr_pinv @ xrot_delta
-    return theta_delta
+    # Compute full geometric Jacobian (6x6 for arm joints)
+    jac = np.zeros((6, m.nv))
+    mujoco.mj_jacSite(m, d, jac[:3], jac[3:], sensor_site_2f85)
+    jac_arm = jac[:, :6]
     
-
+    # Task-space PD force
+    kp_pos, kd_pos = pos_gains.values()
+    kp_rot, kd_rot = rot_gains.values()
+    u_pos = kp_pos @ xpos_delta - kd_pos @ (jac_arm[:3] @ d.qvel[:6])
+    u_rot = kp_rot @ xrot_delta - kd_rot @ (jac_arm[3:] @ d.qvel[:6])
+    u = np.concatenate([u_pos, u_rot])
+    
+    # Compute joint torques (gravity compensation + task force)
+    pos_rot_u = jac_arm.T @ u + d.qfrc_bias[:6]
+    grip_u = grip_ctrl(m, traj_target[-1])
+    
+    return np.hstack([pos_rot_u, grip_u])
 
 
 
 
 model_path = "assets/ur3e_2f85.xml"
 trajectory_fpath = "mujoco/data/traj_l.csv"
-config_path = "mujoco/config/config_l.yml"
-log_fpath = "mujoco/logs/logs_l/"
-ctrl_mode = "l"
+config_path = "mujoco/config/config_l_task.yml"
+log_fpath = "mujoco/logs/logs_l_task/"
+ctrl_mode = "l_task"
 num_joints = 6
 
 with open(config_path, "r") as f: yml = yaml.safe_load(f)
@@ -125,10 +91,10 @@ traj_target = build_interpolated_trajectory(n, hold, trajectory_fpath) if n else
 T = traj_target.shape[0]
 traj_true = np.zeros_like(traj_target)
 
-joint_ranges = m.jnt_range[:num_joints]
+# joint_ranges = m.jnt_range[:num_joints] # NEEDED IN THIS CASE?
 pos_errs = np.zeros(shape=(T, 3))
 rot_errs = np.zeros(shape=(T, 3))
-grip_errs = np.zeros(shape=(T, 1)) # NEEDED ???
+grip_errs = np.zeros(shape=(T, 1)) # NEEDED?
 tot_pos_joint_errs = np.zeros(num_joints)
 tot_rot_joint_errs = np.zeros(num_joints)
 
@@ -142,20 +108,20 @@ def main():
             
     reset(m, d)
     save_flag = True
-
+    
     try:
         for t in range (T):
             viewer.sync()
     
-            d.ctrl = ctrl(t, m, d, traj_target[t, :])
+            d.ctrl = ctrl(t, m, d, traj_target[t, :], pos_gains, rot_gains)
             mujoco.mj_step(m, d)
             
             traj_true[t] = get_3D_state(m, d)
             
             # print(f"pos_target: {traj_target[t, :3]}, pos_true: {traj_true[t, :3]}, pos_err: {pos_errs[t, :]}")
-            print(f"rot_target: {traj_target[t, 3:6]}, rot_true: {traj_true[t, 3:6]}, rot_err: {rot_errs[t, :]}")
+            # print(f"rot_target: {traj_target[t, 3:6]}, rot_true: {traj_true[t, 3:6]}, rot_err: {rot_errs[t, :]}")
             # print(f"grip_target: {traj_target[t, -1]}")
-            print("------------------------------------------------------------------------------------------")
+            # print("------------------------------------------------------------------------------------------")
             
             # time.sleep(0.01)
 
@@ -178,3 +144,23 @@ def main():
 if __name__ == "__main__":
     
     main()
+    
+
+
+
+# Skew-symmetric approach
+# R_err = xrot_target @ xrot_2f85.T
+# skew = 0.5 * (R_err - R_err.T)
+# xrot_delta = np.array([skew[2, 1], skew[0, 2], skew[1, 0]])
+
+# Cross product approach
+# R_err = xrot_target @ xrot_2f85.T
+# xrot_delta = 0.5 * (np.cross(xrot_2f85[:, 0], xrot_target[:, 0]) +
+            #  np.cross(xrot_2f85[:, 1], xrot_target[:, 1]) +
+            #  np.cross(xrot_2f85[:, 2], xrot_target[:, 2]))
+
+# Logarithmic map approach
+# from scipy.linalg import logm
+# R_err = xrot_target @ xrot_2f85.T
+# rot_skew = logm(R_err)
+# xrot_delta = np.array([rot_skew[2, 1], rot_skew[0, 2], rot_skew[1, 0]])

@@ -11,13 +11,13 @@ from utils import axis_angle_to_R
 def cleanup(traj_target, traj_true, T, 
             trajectory_fpath, log_fpath, yml,
             ctrl_mode, **kwargs
-            ):
+        ):
 
     dtn = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     save_fpath = log_fpath + dtn
     os.makedirs(save_fpath, exist_ok=True)
     
-    if ctrl_mode == "l":
+    if ctrl_mode in ("l", "l_task"):
         pos_errs, rot_errs = (kwargs.get("pos_errs"), kwargs.get("rot_errs"))
         plot_trajectory_l(traj_target, traj_true, pos_errs, rot_errs, T, save_fpath)
         plot_3d_trajectory(traj_target, traj_true, pos_errs, save_fpath)
@@ -31,36 +31,22 @@ def cleanup(traj_target, traj_true, T,
 
 
 
-def load_trajectory_file(trajectory_fpath, ctrl_mode):
-    traj = np.genfromtxt(trajectory_fpath, delimiter=',', skip_header=1).reshape(-1, 7)
-    
+def load_trajectory_file(trajectory_fpath):
+    return np.genfromtxt(
+        trajectory_fpath, 
+        delimiter=',', 
+        skip_header=1).reshape(-1, 7)
 
-    if ctrl_mode == "l":
-        # euler angles are specified as roll, pitch, yaw in the csv. 
-        # euler_to_R(yaw, pitch, roll) is expected. Thus, flip it with negative slicing
-        euler_angles = traj[:, 3:6] 
-        
-        rot_matrix = np.apply_along_axis(
-            axis_angle_to_R, 
-            axis=1, arr=euler_angles
-        )
-            
-        return np.concatenate(
-            [traj[:, 0:3], rot_matrix, traj[:, 6:]],
-            axis=1
-        )
-    
-    return traj
         
     
     
 
 
-def build_interpolated_trajectory(n, hold, trajectory_fpath, ctrl_mode):
+def build_interpolated_trajectory(n, hold, trajectory_fpath):
     
     traj = np.concatenate([
         np.zeros(shape=(1, 13)),
-        load_trajectory_file(trajectory_fpath, ctrl_mode)
+        load_trajectory_file(trajectory_fpath)
     ], axis=0)
 
     nrow = traj.shape[0]
@@ -91,10 +77,7 @@ def build_interpolated_trajectory(n, hold, trajectory_fpath, ctrl_mode):
 
 
 
-def build_trajectory(hold, trajectory_fpath, ctrl_mode):
-
-    # traj = load_trajectory_file()
-    # if hold > 1:
-    #     traj = np.repeat(traj, hold, axis=0)
-            
-    return np.repeat(load_trajectory_file(trajectory_fpath, ctrl_mode), hold, axis=0)
+def build_trajectory(hold, trajectory_fpath):
+    return np.repeat(
+        load_trajectory_file(trajectory_fpath),
+        hold, axis=0)

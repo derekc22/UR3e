@@ -53,13 +53,12 @@ def gen_traj_l():
     rz = rz_interp(t)
 
     # Gripper control (0 = open, 1 = closed)
-    # g = np.zeros(num_points)  # Keep gripper open throughout trajectory
     # g cycles through 0, 0.5, 1
     g = np.tile([0, 0, 0], num_points // 3 + 1)[:num_points]
 
 
     rx = np.tile([0, 0, 0], num_points // 3 + 1)[:num_points]
-    ry = np.tile([0.0, 0.0, 0.0], num_points // 3 + 1)[:num_points]
+    ry = np.tile([0, 0, 0], num_points // 3 + 1)[:num_points]
     rz = np.tile([0, 0, 0], num_points // 3 + 1)[:num_points]
 
 
@@ -75,8 +74,8 @@ def gen_traj_l():
     })
 
     # Save to CSV
-    df.to_csv("mujoco/traj_l.csv", index=False)
-    print(f"Generated smooth trajectory with {num_points} points saved to trajectory.csv")
+    df.to_csv("mujoco/data/traj_l.csv", index=False)
+    print(f"Generated smooth trajectory with {num_points} points saved to traj_l.csv")
 
 
 
@@ -149,8 +148,8 @@ def gen_traj_j():
     })
 
     # Save to CSV
-    df.to_csv("mujoco/traj_j.csv", index=False)
-    print(f"Generated smooth trajectory with {num_points} points saved to trajectory.csv")
+    df.to_csv("mujoco/data/traj_j.csv", index=False)
+    print(f"Generated smooth trajectory with {num_points} points saved to traj_j.csv")
 
 
 

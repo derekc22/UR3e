@@ -29,9 +29,8 @@ def plot_trajectory_l(traj_target, traj_true, pos_errs, rot_errs, T, save_fpath)
     
     
     # convert codebase to jax backend and use jax.vmap instead
-    rot_2f85_target = np.array([R_to_axis_angle(R) for R in traj_target[:, 3:12].reshape(T, 3, 3)])
-    rot_2f85_traj_true = np.array([R_to_axis_angle(R) for R in traj_true[:, 3:12].reshape(T, 3, 3)])
-    rot_errs = np.array([R_to_axis_angle(R) for R in rot_errs.reshape(T, 3, 3)])
+    rot_2f85_target = traj_target[:, 3:7]
+    rot_2f85_traj_true = traj_true[:, 3:7]
     
     for i in range(3, 6):
         ax = axes[i]
@@ -47,8 +46,8 @@ def plot_trajectory_l(traj_target, traj_true, pos_errs, rot_errs, T, save_fpath)
         
 
     ax = axes[6]
-    ax.plot(t, traj_target[:, 12],'C0', label="target")
-    ax.plot(t, traj_true[:, 12],'C1', label="true")
+    ax.plot(t, traj_target[:, 6],'C0', label="target")
+    ax.plot(t, traj_true[:, 6],'C1', label="true")
     ax.set_title("grip")
     ax.grid(True)
     ax.set_xlim(left=0)
@@ -97,7 +96,7 @@ def plot_3d_trajectory(traj_target, traj_true, pos_errs, save_fpath):
     title = (
         f"mean_x_err:  {mean_pos_errs[0]:.3g}, "
         f"mean_y_err:  {mean_pos_errs[1]:.3g}, "
-        f"mean_z_err:  {mean_pos_errs[2]:.3g}, "
+        f"mean_z_err:  {mean_pos_errs[2]:.3g}"
     )
     plt.suptitle(title)
     
@@ -131,7 +130,7 @@ def plot_2d_trajectory(traj_target, traj_true, pos_errs, save_fpath):
     title = (
         f"mean_x_err:  {mean_pos_errs[0]:.3g}, "
         f"mean_y_err:  {mean_pos_errs[1]:.3g}, "
-        f"mean_z_err:  {mean_pos_errs[2]:.3g}, "
+        f"mean_z_err:  {mean_pos_errs[2]:.3g}"
     )
     plt.suptitle(title)
     
@@ -177,9 +176,9 @@ def plot_trajectory_j(traj_target, traj_true, qpos_errs, T, save_fpath):
         f"mean_j1_err: {mean_qpos_errs[0]:.3g}, "
         f"mean_j2_err: {mean_qpos_errs[1]:.3g}, "
         f"mean_j3_err: {mean_qpos_errs[2]:.3g}, "
-        f"mean_j4_err: {mean_qpos_errs[0]:.3g}, "
-        f"mean_j5_err: {mean_qpos_errs[1]:.3g}, "
-        f"mean_j6_err: {mean_qpos_errs[2]:.3g}"
+        f"mean_j4_err: {mean_qpos_errs[3]:.3g}, "
+        f"mean_j5_err: {mean_qpos_errs[4]:.3g}, "
+        f"mean_j6_err: {mean_qpos_errs[5]:.3g}"
     )
     plt.suptitle(title)
     
