@@ -8,7 +8,7 @@ from utils import (
     get_xpos, get_xrot, get_task_space_state,
     grip_ctrl, update_errs, get_joint_torques)
 from scipy.spatial.transform import Rotation as R
-from gen_traj import gen_trajL
+from gen_traj import gen_traj_l
 from controller.aux import build_trajectory, build_interpolated_trajectory, cleanup
 import yaml
 import time
@@ -66,6 +66,12 @@ def ctrl(t: int,
     
     # Compute joint torques (gravity compensation + task force)
     pos_rot_u = jac_arm.T @ u + d.qfrc_bias[:6]
+    # Damped Least Squares
+    # damping = 0.5  # DLS stability factor
+    # J_JT = jac_arm @ jac_arm.T
+    # regularization = damping**2 * np.eye(6)
+    # J_pinv = jac_arm.T @ np.linalg.inv(J_JT + regularization)
+    # pos_rot_u = J_pinv @ u + d.qfrc_bias[:6]
     grip_u = grip_ctrl(m, traj_target[-1])
     
     return np.hstack([
@@ -85,7 +91,7 @@ def main():
     trajectory_fpath = "controller/data/traj_l.csv"
     config_path = "controller/config/config_l_task.yml"
     log_fpath = "controller/logs/logs_l_task/"
-    ctrl_mode = "L_task"
+    ctrl_mode = "l_task"
     num_ur3e_joints = 6
 
     with open(config_path, "r") as f: yml = yaml.safe_load(f)
@@ -99,7 +105,7 @@ def main():
     # total = 14 nq, 14 nv, 7 nu
     m, d = load_model(model_path)
 
-    gen_trajL()
+    gen_traj_l()
     traj_target = build_interpolated_trajectory(n, hold, trajectory_fpath) if n else build_trajectory(hold, trajectory_fpath)
     T = traj_target.shape[0]
     traj_true = np.zeros_like(traj_target)

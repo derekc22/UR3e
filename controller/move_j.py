@@ -7,7 +7,7 @@ from utils import (
     load_model, reset,
     get_arm_qpos, get_joint_space_state,
     pd_ctrl, grip_ctrl, update_errs, get_joint_torques)
-from gen_traj import gen_trajJ
+from gen_traj import gen_traj_j
 from controller.aux import build_trajectory, build_interpolated_trajectory, cleanup
 import yaml
 
@@ -61,7 +61,7 @@ def main():
     trajectory_fpath = "controller/data/traj_j.csv"
     config_fpath = "controller/config/config_j.yml"
     log_fpath = "controller/logs/logs_j/"
-    ctrl_mode = "J"
+    ctrl_mode = "j"
     num_ur3e_joints = 6
 
     with open(config_fpath, "r") as f: yml = yaml.safe_load(f)
@@ -74,7 +74,7 @@ def main():
     # total = 14 nq, 14 nv, 7 nu
     m, d = load_model(model_path)
 
-    gen_trajJ()
+    gen_traj_j()
     traj_target = build_interpolated_trajectory(n, hold, trajectory_fpath) if n else build_trajectory(hold, trajectory_fpath)
     T = traj_target.shape[0]
     traj_true = np.zeros_like(traj_target)

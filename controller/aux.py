@@ -21,7 +21,7 @@ def cleanup(traj_target: np.array,
     save_fpath = log_fpath + dtn
     os.makedirs(save_fpath, exist_ok=True)
     
-    if ctrl_mode in ("L", "L_task"):
+    if ctrl_mode in ("l", "l_task"):
         pos_errs, rot_errs = (kwargs.get("pos_errs"), kwargs.get("rot_errs"))
         plot_trajectory_l(traj_target, traj_true, pos_errs, rot_errs, save_fpath)
         plot_3d_trajectory(traj_target, traj_true, pos_errs, save_fpath)
