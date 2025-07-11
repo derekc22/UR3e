@@ -7,7 +7,7 @@ from utils import (
     load_model, reset,
     get_arm_qpos, get_joint_space_state,
     pd_ctrl, grip_ctrl, update_errs, get_joint_torques)
-from gen_traj import gen_traj_j
+from gen_traj import gen_trajJ
 from controller.aux import build_trajectory, build_interpolated_trajectory, cleanup
 import yaml
 
@@ -36,11 +36,11 @@ def ctrl(t: int,
 
 
 
-def get_qpos_err(t: int,  
-                m: mujoco.MjModel, 
-                d: mujoco.MjData, 
-                qpos_target: np.array,
-                qpos_errs: np.array) -> np.array:
+def get_qpos_err(t: int, 
+                 m: mujoco.MjModel, 
+                 d: mujoco.MjData, 
+                 qpos_target: np.array,
+                 qpos_errs: np.array) -> np.array:
     
     qpos_delta = qpos_target - get_arm_qpos(d)
     update_errs(t, qpos_errs, qpos_delta)
@@ -61,7 +61,7 @@ def main():
     trajectory_fpath = "controller/data/traj_j.csv"
     config_fpath = "controller/config/config_j.yml"
     log_fpath = "controller/logs/logs_j/"
-    ctrl_mode = "j"
+    ctrl_mode = "J"
     num_ur3e_joints = 6
 
     with open(config_fpath, "r") as f: yml = yaml.safe_load(f)
@@ -74,7 +74,7 @@ def main():
     # total = 14 nq, 14 nv, 7 nu
     m, d = load_model(model_path)
 
-    gen_traj_j()
+    gen_trajJ()
     traj_target = build_interpolated_trajectory(n, hold, trajectory_fpath) if n else build_trajectory(hold, trajectory_fpath)
     T = traj_target.shape[0]
     traj_true = np.zeros_like(traj_target)
@@ -104,7 +104,7 @@ def main():
             traj_true[t] = get_joint_space_state(m, d)
             actuator_frc[t] = get_joint_torques(d)
             
-            print(ctrls[:3, :] - actuator_frc[:3, :])
+            # print(ctrls[:3, :] - actuator_frc[:3, :])
 
             # print(f"qpos_target: {traj_target[t, :7]}, pos_true: {traj_true[t, :7]}, pos_err: {qpos_errs[t, :]}")
             # print(f"grip_target: {traj_target[t, -1]}")

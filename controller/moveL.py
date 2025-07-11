@@ -7,7 +7,7 @@ from utils import (
     load_model, reset,
     get_xpos, get_xrot, get_task_space_state,
     pd_ctrl, grip_ctrl, update_errs, get_joint_torques)
-from gen_traj import gen_traj_l
+from gen_traj import gen_trajL
 from controller.aux import build_trajectory, build_interpolated_trajectory, cleanup
 import yaml
 from scipy.spatial.transform import Rotation as R
@@ -122,7 +122,7 @@ def main():
     trajectory_fpath = "controller/data/traj_l.csv"
     config_path = "controller/config/config_l.yml"
     log_fpath = "controller/logs/logs_l/"
-    ctrl_mode = "l"
+    ctrl_mode = "L"
     num_ur3e_joints = 6
 
     with open(config_path, "r") as f: yml = yaml.safe_load(f)
@@ -136,7 +136,7 @@ def main():
     # total = 14 nq, 14 nv, 7 nu
     m, d = load_model(model_path)
 
-    gen_traj_l()
+    gen_trajL()
     traj_target = build_interpolated_trajectory(n, hold, trajectory_fpath) if n else build_trajectory(hold, trajectory_fpath)
     T = traj_target.shape[0]
     traj_true = np.zeros_like(traj_target)

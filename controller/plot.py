@@ -2,6 +2,7 @@ import numpy as np
 from utils import R_to_axis_angle, get_joint_torques
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # Needed for 3D plotting
+import pickle
 
 
 def plot_trajectory_l(traj_target, traj_true, pos_errs, rot_errs, save_fpath):
@@ -25,7 +26,6 @@ def plot_trajectory_l(traj_target, traj_true, pos_errs, rot_errs, save_fpath):
         ax.set_title(["x", "y", "z"][j])
         ax.grid(True)
         ax.set_xlim(left=0)
-        # if i == 2:
         ax.legend(loc='upper right')
     
     
@@ -41,7 +41,6 @@ def plot_trajectory_l(traj_target, traj_true, pos_errs, rot_errs, save_fpath):
         ax.set_title(["rx", "ry", "rz"][j])
         ax.grid(True)
         ax.set_xlim(left=0)
-        # if i == 5:
         ax.legend(loc='upper right')
         
     mean_pos_errs = np.mean(pos_errs, axis=0)
@@ -89,7 +88,7 @@ def plot_3d_trajectory(traj_target, traj_true, pos_errs, save_fpath):
     plt.suptitle(title)
     plt.tight_layout()    
     plt.savefig(f"{save_fpath}/plot3d.jpg")
-    
+    with open(f"{save_fpath}/plot3d_pkl.pkl", "wb") as f: pickle.dump(fig, f)
 
 
 
@@ -108,7 +107,6 @@ def plot_2d_trajectory(traj_target, traj_true, pos_errs, save_fpath):
         ax.plot(traj_true[:, j[0]], traj_true[:, j[1]],'C1', label="true")
         ax.set_title(["xy", "yz", "xz"][i])
         ax.grid(True)
-        # if i == 2:
         ax.legend(loc='upper right')
 
     mean_pos_errs = np.mean(pos_errs, axis=0)
@@ -174,15 +172,11 @@ def plot_ctrl(ctrls, actuator_frc, save_fpath):
     for i in range(7):
         ax = axes[i]
         ax.plot(t, ctrls[:, i],'C0', label="ctrl")
+        ax.plot(t, actuator_frc[:, i],'C1', label="actuatorfrc")
         ax.set_title(["j1", "j2", "j3", "j4", "j5", "j6", "grip"][i])
         ax.grid(True)
         ax.set_xlim(left=0)
-        
-        ax2 = ax.twinx()
-        ax2.plot(t, actuator_frc[:, i],'C1', label="actuatorfrc")
-        
-        ax.legend(loc='upper left')
-        ax2.legend(loc='upper right')
+        ax.legend(loc='upper right')
 
     axes[7].set_visible(False)
     axes[8].set_visible(False)

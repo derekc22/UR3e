@@ -8,10 +8,10 @@ from utils import (
     get_xpos, get_xrot, get_task_space_state,
     grip_ctrl, update_errs, get_joint_torques)
 from scipy.spatial.transform import Rotation as R
-from gen_traj import gen_traj_l
+from gen_traj import gen_trajL
 from controller.aux import build_trajectory, build_interpolated_trajectory, cleanup
 import yaml
-
+import time
 
     
 
@@ -85,7 +85,7 @@ def main():
     trajectory_fpath = "controller/data/traj_l.csv"
     config_path = "controller/config/config_l_task.yml"
     log_fpath = "controller/logs/logs_l_task/"
-    ctrl_mode = "l_task"
+    ctrl_mode = "L_task"
     num_ur3e_joints = 6
 
     with open(config_path, "r") as f: yml = yaml.safe_load(f)
@@ -99,7 +99,7 @@ def main():
     # total = 14 nq, 14 nv, 7 nu
     m, d = load_model(model_path)
 
-    gen_traj_l()
+    gen_trajL()
     traj_target = build_interpolated_trajectory(n, hold, trajectory_fpath) if n else build_trajectory(hold, trajectory_fpath)
     T = traj_target.shape[0]
     traj_true = np.zeros_like(traj_target)
@@ -131,14 +131,14 @@ def main():
             traj_true[t] = get_task_space_state(m, d)
             actuator_frc[t] = get_joint_torques(d)
             
-            print(ctrls[:3, :] - actuator_frc[:3, :])
+            # print(ctrls[:3, :] - actuator_frc[:3, :])
             
             # print(f"pos_target: {traj_target[t, :3]}, pos_true: {traj_true[t, :3]}, pos_err: {pos_errs[t, :]}")
             # print(f"rot_target: {traj_target[t, 3:6]}, rot_true: {traj_true[t, 3:6]}, rot_err: {rot_errs[t, :]}")
             # print(f"grip_target: {traj_target[t, -1]}")
             # print("------------------------------------------------------------------------------------------")
             
-            # time.sleep(0.01)
+            # time.sleep(0.001)
 
     except KeyboardInterrupt:
         pass

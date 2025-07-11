@@ -21,7 +21,7 @@ def cleanup(traj_target: np.array,
     save_fpath = log_fpath + dtn
     os.makedirs(save_fpath, exist_ok=True)
     
-    if ctrl_mode in ("l", "l_task"):
+    if ctrl_mode in ("L", "L_task"):
         pos_errs, rot_errs = (kwargs.get("pos_errs"), kwargs.get("rot_errs"))
         plot_trajectory_l(traj_target, traj_true, pos_errs, rot_errs, save_fpath)
         plot_3d_trajectory(traj_target, traj_true, pos_errs, save_fpath)
@@ -53,7 +53,7 @@ def build_interpolated_trajectory(n: int,
                                   trajectory_fpath: str) -> np.array:
     
     traj = np.concatenate([
-        np.zeros(shape=(1, 13)),
+        np.zeros(shape=(1, 7)),
         load_trajectory_file(trajectory_fpath)
     ], axis=0)
 

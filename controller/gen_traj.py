@@ -8,7 +8,7 @@ np.set_printoptions(
     suppress=False     # Do not suppress small floating point numbers
 )
 
-def gen_traj_l() -> None:
+def gen_trajL() -> None:
 
     # Generate trajectory points
     num_points = 200
@@ -81,7 +81,7 @@ def gen_traj_l() -> None:
 
 
 
-def gen_traj_j() -> None:
+def gen_trajJ() -> None:
 
     # Generate trajectory points
     num_points = 200
