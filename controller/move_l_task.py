@@ -3,10 +3,10 @@ import numpy as np
 import matplotlib
 np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 matplotlib.use('Agg')  # Set backend to non-interactive
-from utils import (
+from controller.controller_utils import (
     load_model, reset,
     get_xpos, get_xrot, get_task_space_state,
-    grip_ctrl, update_errs, get_joint_torques)
+    grip_ctrl, update_errs, update_tot_errs, get_joint_torques)
 from scipy.spatial.transform import Rotation as R
 from gen_traj import gen_traj_l
 from controller.aux import build_trajectory, build_interpolated_trajectory, cleanup
@@ -26,7 +26,9 @@ def ctrl(t: int,
          pos_gains: dict, 
          rot_gains: dict,
          pos_errs: np.array,
-         rot_errs: np.array) -> np.array:
+         rot_errs: np.array,
+         tot_pos_errs: np.array,
+         tot_rot_errs: np.array) -> np.array:
 
     sensor_site_2f85, xpos_2f85 = get_xpos(m, d, "right_pad1_site")
     _, xrot_2f85 = get_xrot(m, d, "right_pad1_site") 
@@ -35,6 +37,7 @@ def ctrl(t: int,
     # Position error
     xpos_delta = traj_target[:3] - xpos_2f85
     update_errs(t, pos_errs, xpos_delta)
+    update_tot_errs(tot_pos_errs, xpos_delta)
     
     # Orientation error (axis-angle)
     xrot_target = traj_target[3:6]
@@ -51,6 +54,7 @@ def ctrl(t: int,
     # Convert to rotation vector (axis-angle)
     xrot_delta = q_err.as_rotvec()
     update_errs(t, rot_errs, xrot_delta)
+    update_tot_errs(tot_rot_errs, xrot_delta)
 
     # Compute full geometric Jacobian (6x6 for arm joints)
     jac = np.zeros((6, m.nv))
@@ -58,20 +62,18 @@ def ctrl(t: int,
     jac_arm = jac[:, :6]
     
     # Task-space PD force
-    kp_pos, kd_pos = pos_gains.values()
-    kp_rot, kd_rot = rot_gains.values()
-    u_pos = kp_pos @ xpos_delta - kd_pos @ (jac_arm[:3] @ d.qvel[:6])
-    u_rot = kp_rot @ xrot_delta - kd_rot @ (jac_arm[3:] @ d.qvel[:6])
-    u = np.concatenate([u_pos, u_rot])
+    kp_pos, kd_pos, ki_pos = pos_gains.values()
+    kp_rot, kd_rot, ki_rot = rot_gains.values()
+    dt = m.opt.timestep
+    
+    # in task space (?)
+    u_pos = kp_pos @ xpos_delta - kd_pos @ (jac_arm[:3] @ d.qvel[:6]) + ki_pos @ tot_pos_errs * dt
+    u_rot = kp_rot @ xrot_delta - kd_rot @ (jac_arm[3:] @ d.qvel[:6]) + ki_rot @ tot_rot_errs * dt
+    u = np.hstack([u_pos, u_rot])
     
     # Compute joint torques (gravity compensation + task force)
+    # Convert from task space to joint space using inverse jacobian (?)
     pos_rot_u = jac_arm.T @ u + d.qfrc_bias[:6]
-    # Damped Least Squares
-    # damping = 0.5  # DLS stability factor
-    # J_JT = jac_arm @ jac_arm.T
-    # regularization = damping**2 * np.eye(6)
-    # J_pinv = jac_arm.T @ np.linalg.inv(J_JT + regularization)
-    # pos_rot_u = J_pinv @ u + d.qfrc_bias[:6]
     grip_u = grip_ctrl(m, traj_target[-1])
     
     return np.hstack([
@@ -107,6 +109,7 @@ def main():
 
     gen_traj_l()
     traj_target = build_interpolated_trajectory(n, hold, trajectory_fpath) if n else build_trajectory(hold, trajectory_fpath)
+    # print(traj_target.shape)
     T = traj_target.shape[0]
     traj_true = np.zeros_like(traj_target)
 
@@ -116,6 +119,9 @@ def main():
     grip_errs = np.zeros(shape=(T, 1)) # NEEDED?
     ctrls = np.zeros(shape=(T, m.nu))
     actuator_frc = np.zeros(shape=(T, m.nu))
+
+    tot_pos_errs = np.zeros(shape=(3, ))
+    tot_rot_errs = np.zeros(shape=(3, ))
 
     viewer = mujoco.viewer.launch_passive(m, d)
     viewer.opt.frame = mujoco.mjtFrame.mjFRAME_BODY
@@ -127,8 +133,13 @@ def main():
     try:
         for t in range (T):
             viewer.sync()
-    
-            u = ctrl(t, m, d, traj_target[t, :], pos_gains, rot_gains, pos_errs, rot_errs)
+            
+            if t % hold == 0: 
+                # print(t)
+                tot_pos_errs.fill(0)
+                tot_rot_errs.fill(0)
+            
+            u = ctrl(t, m, d, traj_target[t, :], pos_gains, rot_gains, pos_errs, rot_errs, tot_pos_errs, tot_rot_errs)
             d.ctrl = u
             ctrls[t] = u
             

@@ -4,17 +4,20 @@ from gymnasium import spaces
 from gymnasium.envs.mujoco import MujocoEnv
 from mujoco import MjModel
 import mujoco
-from utils import *
+from gymnasium_env.main_utils import *
+
+render_fps = 1
 
 class UR3eEnv(MujocoEnv):
 
     metadata = {
         "render_modes": ["human"],
-        "render_fps": 200
-    }
+        "render_fps": render_fps
+    }    
 
     def __init__(self, render_mode=None):
 
+        
         # model_path = os.path.join(os.path.dirname(__file__), "archive/model/ur3e.xml")
         model_path = os.path.abspath("./assets/main.xml")
 
@@ -30,22 +33,26 @@ class UR3eEnv(MujocoEnv):
             shape=(obs_dim,),
             dtype=np.float64
         )
-
+        # print((1/self.model.opt.timestep)/render_fps)
+        # exit
         # Call full MujocoEnv constructor
         super().__init__(
             model_path=model_path,
-            frame_skip=5,
+            frame_skip=int((1/self.model.opt.timestep)/render_fps),
             observation_space=observation_space,
             # action_space=action_space,
             render_mode=render_mode
         )
 
 
+        jnt_range = self.model.actuator_ctrlrange[:action_dim]  # shape: (action_dim, 2)
+        min_ctrl = jnt_range[:, 0]
+        max_ctrl = jnt_range[:, 1]
+        print(min_ctrl)
         self.action_space = spaces.Box(
-            low=-33000,
-            high=33000,
-            shape=(action_dim,),
-            dtype=np.float64
+            low=min_ctrl,
+            high=max_ctrl,
+            dtype=np.float32
         )
 
     def _initialize_model(self, model_path):
@@ -64,29 +71,21 @@ class UR3eEnv(MujocoEnv):
 
         return observation, reward, terminated, truncated, info
 
-    # def reset_model(self):
-    #     qpos = self.init_qpos + self.np_random.uniform(low=-0.01, high=0.01, size=self.model.nq)
-    #     qvel = self.init_qvel + self.np_random.uniform(low=-0.01, high=0.01, size=self.model.nv)
-    #     self.set_state(qpos, qvel)
-    #     return self._get_obs()
-
-    # def _get_obs(self):
-    #     return np.concatenate([self.data.qpos.flat, self.data.qvel.flat])
 
     def reset_model(self):
-        qpos = self.init_qpos #+ self.np_random.uniform(low=-10, high=10, size=self.model.nq)
-        qvel = self.init_qvel #+ self.np_random.uniform(low=-10, high=10, size=self.model.nv)
+        qpos = self.model.keyframe("home").qpos
+        qvel = self.model.keyframe("home").qvel
         self.set_state(qpos, qvel)
         return self._get_obs()
 
     def _get_obs(self):
         return np.concatenate([
-            get_robot_qpos(self.data).flat, # 14 dim
-            get_robot_qvel(self.data).flat, # 14 dim
-            get_gripper_pos(self.model, self.data), # 3 dim
-            get_mug_qpos(self.data), # 7 dim
-            get_ghost_pos(self.model), # 3 dim
-            get_grasp_force(self.data) # 2 dim
+            get_robot_qpos(self.data).flat, # 14 dim  [:14]
+            get_robot_qvel(self.data).flat, # 14 dim  [14:28]
+            get_gripper_pos(self.model, self.data), # 3 dim [28:31]
+            get_mug_qpos(self.data), # 7 dim [31:38]
+            get_ghost_pos(self.model), # 3 dim [38:41] 
+            get_grasp_force(self.data) # 2 dim [41:]
         ])
 
     # def compute_reward(self, obs, action):

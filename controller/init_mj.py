@@ -2,7 +2,7 @@ import mujoco
 import mujoco.viewer
 import time
 import numpy as np
-from utils import *
+from controller.controller_utils import *
 np.set_printoptions(
     linewidth=400,     # Wider output (default is 75)
     threshold=np.inf,  # Print entire array, no summarization with ...

@@ -11,7 +11,7 @@ np.set_printoptions(
 def gen_traj_l() -> None:
 
     # Generate trajectory points
-    num_points = 200
+    num_points = 1000
     t = np.linspace(0, 1, num_points)
 
     # Generate random waypoints and interpolate for smoothness

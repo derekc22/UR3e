@@ -1,5 +1,5 @@
 import numpy as np
-from utils import R_to_axis_angle, get_joint_torques
+from controller.controller_utils import get_joint_torques
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # Needed for 3D plotting
 import pickle
