@@ -1,5 +1,5 @@
 import numpy as np
-from utils import R_to_euler, euler_to_R
+from controller.controller_utils import R_to_euler, euler_to_R
 np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf, suppress=True)
 
 # traj = np.genfromtxt('mujoco/trajectory.csv', delimiter=',', skip_header=1).reshape(-1, 7)

@@ -3,7 +3,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 import matplotlib
-from utils import euler_to_R, R_to_euler, get_xpos, get_xrot, get_grip_ctrl, get_grasp_force
+from controller.controller_utils import euler_to_R, R_to_euler, get_xpos, get_xrot, get_grip_ctrl, get_grasp_force
 matplotlib.use('Agg')  # Set backend to non-interactive
 import yaml
 from datetime import datetime

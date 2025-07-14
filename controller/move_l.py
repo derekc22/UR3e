@@ -3,7 +3,7 @@ import numpy as np
 np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 import matplotlib
 matplotlib.use('Agg')  # Set backend to non-interactive
-from utils import (
+from controller.controller_utils import (
     load_model, reset,
     get_xpos, get_xrot, get_task_space_state,
     pd_ctrl, grip_ctrl, update_errs, get_joint_torques)
