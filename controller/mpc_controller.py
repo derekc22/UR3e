@@ -4,8 +4,8 @@ import mujoco
 from scipy.spatial.transform import Rotation as R
 
 from controller.controller_utils import (
-    get_xpos,
-    get_xrot,
+    get_site_xpos,
+    get_site_xrot,
     grip_ctrl,
 )
 
@@ -79,8 +79,8 @@ class MPCController:
             Joint torques for the six arm actuators plus gripper command.
         """
         # Current EE pose ------------------------------------------------------------------
-        site_id, xpos = get_xpos(self.m, d, site)
-        _, xrot_mat = get_xrot(self.m, d, site)
+        site_id, xpos = get_site_xpos(self.m, d, site)
+        _, xrot_mat = get_site_xrot(self.m, d, site)
         xrot_vec = R.from_matrix(xrot_mat.reshape(3, 3)).as_rotvec()
 
         x_current = np.hstack([xpos, xrot_vec])  # (6,)

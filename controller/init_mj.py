@@ -3,6 +3,7 @@ import mujoco.viewer
 import time
 import numpy as np
 from controller.controller_utils import *
+from gymnasium_env.gymnasium_env_utils import *
 np.set_printoptions(
     linewidth=400,     # Wider output (default is 75)
     threshold=np.inf,  # Print entire array, no summarization with ...
@@ -14,17 +15,17 @@ np.set_printoptions(
 
 def main():
 
-    # model_path = "assets/ur3e/ur3e.xml"
-    # model_path = "assets/ur3e_raw.xml"
-    # model_path = "assets/2f85/2f85.xml"
-    # model_path = "assets/main.xml"
-    # model_path = "assets/mug/mug.xml"
-    # model_path = "assets/ur3e_fish.xml"
-    model_path = "assets/ur3e_2f85.xml"
+    # m_path = "assets/ur3e/ur3e.xml"
+    # m_path = "assets/ur3e_raw.xml"
+    # m_path = "assets/2f85/2f85.xml"
+    m_path = "assets/main.xml"
+    # m_path = "assets/mug/mug.xml"
+    # m_path = "assets/ur3e_fish.xml"
+    # m_path = "assets/ur3e_2f85.xml"
     
     
 
-    m, d = load_model(model_path)
+    m, d = load_model(m_path)
     
     # mug   = 7  nq, 6  nv, 0 nu
     # ur3e  = 6  nq, 6  nv, 6 nu
@@ -32,14 +33,15 @@ def main():
     # total = 21 nq, 20 nv, 7 nu
 
 
-    # reset(m, d)
+    reset(m, d)
+
 
     viewer = mujoco.viewer.launch_passive(m, d)
-    # viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
-    viewer.opt.frame = mujoco.mjtFrame.mjFRAME_BODY
+    viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
+    # viewer.opt.frame = mujoco.mjtFrame.mjFRAME_BODY
 
 
-    # python -m mujoco.viewer --mjcf=./model/ur3e.xml
+    # python -m mujoco.viewer --mjcf=./m/ur3e.xml
 
     start = time.time()
     t = time.time() - start
@@ -47,24 +49,29 @@ def main():
     while t < 1000:
         mujoco.mj_step(m, d)
         viewer.sync()
-
-        # print("nq:", m.nq, " nv:", m.nv, " nu:", m.nu)
-        # print(R_to_euler(d.site("right_pad1_site").xmat.reshape(3, 3)))
-        
-        # print(d.qpos[0:3])
+        t = time.time() -  start
 
         # print("nq: ", m.nq)
         # print("nv: ", m.nv)
         # print("nu: ", m.nu)
         # print("________________")
+        
 
-        # print(get_grasp_force(d))
-        # print(get_grasp_bool(d))
-
-
-        # time.sleep(0.01)
-        t = time.time() -  start
-
+        # body_id = m.body(name="shoulder_link").id
+        # body_id = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_SITE, "wrist_3_sensor")
+        # mujoco.mj_forward(m, d)
+        # position = d.xpos[body_id]
+        # print(position)
+        # print(get_2f85_home2(m, d))
+        # print(get_2f85_home(m, d))
+        print(get_2f85_xpos(m, d))
+        # exit()
+        
+        # print(m.qpos0)
+        # print(m.qvel0)
+        # print(get_body_xpos(m, d, "fish"))
+        # exit()
+        
 
 
 

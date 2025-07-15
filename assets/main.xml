@@ -101,25 +101,6 @@
       <!-- <geom name="table" type="box" size="0.5 0.5 0.000001" group = "1" rgba=".1 .1 .1 1" /> -->
     </body>
 
-    <!-- REAL FISH -->
-    <!-- <body name="fish" pos="0.4 0.1 0.02" quat="1 0 0 0" >
-      <joint name="fish" type="free" limited="false"/>
-        <geom name="fish" pos="0 0 0" quat="1 0 0 0" type="mesh" group="1" mesh="fish" />
-        <site name="fish_front" pos="-0.038 0 0.01"  quat="1 0 0 0" type="sphere" size="1e-3" group="2" rgba="1 1 0 1" />
-        <site name="fish_rear"  pos="0.031 0 0.01"  quat="0 0 0 1" type="sphere" size="1e-3" group="2" rgba="1 1 0 1" />
-    </body> -->
-
-    <!-- FAKE FISH (AKA MUG) -->
-    <body name="fish" pos="0.5 -0.15 0" quat="0 0 -0.7071 -0.7071" >
-      <joint name="fish" type="free" limited="false"/>
-      <geom name="fish" pos="0 0 0" quat="1 0 0 0" type="mesh" group="1" mesh="fish"/>
-    </body>
-
-    <!-- FAKE FISH (AKA BOX) -->
-    <!-- <body name="fish" pos="0.4 0.1 0.02">
-      <joint name="fish" type="free" limited="false"/>
-      <geom name="fish" type="box" size="0.02 0.02 0.02" mass="0.1" rgba="1 1 1 1"/>
-    </body> -->
 
     <!-- UR3e Arm - renamed base to robot_base -->
     <body name="robot_base" pos="0 0 0">
@@ -262,8 +243,33 @@
           </body>
         </body>
       </body>
-
     </body>
+
+
+
+    <!-- REAL FISH -->
+    <!-- <body name="fish" pos="0.4 0.1 0.02" quat="1 0 0 0" >
+      <joint name="fish" type="free" limited="false"/>
+        <geom name="fish" pos="0 0 0" quat="1 0 0 0" type="mesh" group="1" mesh="fish" />
+        <site name="fish_front" pos="-0.038 0 0.01"  quat="1 0 0 0" type="sphere" size="1e-3" group="2" rgba="1 1 0 1" />
+        <site name="fish_rear"  pos="0.031 0 0.01"  quat="0 0 0 1" type="sphere" size="1e-3" group="2" rgba="1 1 0 1" />
+    </body> -->
+
+    <!-- FAKE FISH (AKA MUG) -->
+    <body name="fish" pos="0.5 -0.15 0" quat="0 0 -0.7071 -0.7071" >
+      <joint name="fish" type="free" limited="false"/>
+      <geom name="fish" pos="0 0 0" quat="1 0 0 0" type="mesh" group="1" mesh="fish"/>
+    </body>
+
+    <!-- FAKE FISH (AKA BOX) -->
+    <!-- <body name="fish" pos="0.4 0.1 0.02">
+      <joint name="fish" type="free" limited="false"/>
+      <geom name="fish" type="box" size="0.02 0.02 0.02" mass="0.1" rgba="1 1 1 1"/>
+    </body> -->
+
+
+
+
     <!-- REAL FISH -->
     <!-- Ghost representing desired pose -->
       <!-- <body name="ghost" pos="0.6 0.15 0.015" >
@@ -394,8 +400,8 @@
 
   <keyframe>
     <key name="home" 
-      qpos="0.5 -0.15 0 0 0 -0.7071 -0.7071 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-      qvel="0.5 -0.15 0 0 0 -0.7071 -0.7071 0 0 0 0 0 0 0 0 0 0 0 0 0"
+      qpos="0.5 -0.15 0 0 0 -0.7071 -0.7071 0 0 0 0 0 0 0 0.43 0.403 0.029 0 0 0 0"
+      qvel="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
     />
   </keyframe>
 </mujoco>

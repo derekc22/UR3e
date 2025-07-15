@@ -25,7 +25,8 @@ register(
     entry_point="gymnasium_env.envs.ur3e_env:UR3eEnv"
 )
 
-env = gym.make("gymnasium_env/ur3e-v0", render_mode="human")
+# env = gym.make("gymnasium_env/ur3e-v0", render_mode="human")
+env = gym.make("gymnasium_env/ur3e-v0", render_mode="rgb_array")
 print(env.metadata)
 
 

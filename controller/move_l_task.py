@@ -4,9 +4,12 @@ import matplotlib
 np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 matplotlib.use('Agg')  # Set backend to non-interactive
 from controller.controller_utils import (
+    get_task_space_state,
+    grip_ctrl, update_errs, update_tot_errs)
+from utils import (
     load_model, reset,
-    get_xpos, get_xrot, get_task_space_state,
-    grip_ctrl, update_errs, update_tot_errs, get_joint_torques)
+    get_site_xpos, get_site_xquat, get_site_xrot, get_joint_torques
+)
 from scipy.spatial.transform import Rotation as R
 from gen_traj import gen_traj_l
 from controller.aux import build_trajectory, build_interpolated_trajectory, cleanup
@@ -30,8 +33,8 @@ def ctrl(t: int,
          tot_pos_errs: np.array,
          tot_rot_errs: np.array) -> np.array:
 
-    sensor_site_2f85, xpos_2f85 = get_xpos(m, d, "right_pad1_site")
-    _, xrot_2f85 = get_xrot(m, d, "right_pad1_site") 
+    sensor_site_2f85, xpos_2f85 = get_site_xpos(m, d, "right_pad1_site")
+    _, xrot_2f85 = get_site_xrot(m, d, "right_pad1_site") 
     xrot_2f85 = xrot_2f85.reshape(3, 3)
         
     # Position error
