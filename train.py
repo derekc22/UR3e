@@ -20,9 +20,10 @@ register(
 # )
 env = make_vec_env(
     "gymnasium_env/ur3e-v0",
-    n_envs=1,
+    n_envs=20,
     # env_kwargs={"render_mode": None},
-    env_kwargs={"render_mode": "human"},
+    env_kwargs={"render_mode": "rgb_array"},
+    # env_kwargs={"render_mode": "human"},
     vec_env_cls=DummyVecEnv
 )
 

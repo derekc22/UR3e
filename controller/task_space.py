@@ -1,7 +1,7 @@
 # def ctrl(t, m, d, traj_i):
 #     site_name = "right_pad1_site"
-#     site_id, current_pos = get_xpos(m, d, site_name)
-#     _, current_rot_mat = get_xrot(m, d, site_name)
+#     site_id, current_pos = get_site_xpos(m, d, site_name)
+#     _, current_rot_mat = get_site_xrot(m, d, site_name)
 #     current_rot = current_rot_mat.reshape(3, 3)
     
 #     # Compute full geometric Jacobian (6x6 for arm joints)

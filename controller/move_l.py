@@ -4,9 +4,12 @@ np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 import matplotlib
 matplotlib.use('Agg')  # Set backend to non-interactive
 from controller.controller_utils import (
-    load_model, reset,
-    get_xpos, get_xrot, get_task_space_state,
+    get_task_space_state,
     pd_ctrl, grip_ctrl, update_errs, get_joint_torques)
+from utils import (
+    load_model, reset,
+    get_site_xpos, get_site_xquat, get_site_xrot, get_joint_torques
+)
 from gen_traj import gen_traj_l
 from controller.aux import build_trajectory, build_interpolated_trajectory, cleanup
 import yaml
@@ -47,7 +50,7 @@ def get_pos_err(t: int,
                 xpos_target: np.array,
                 pos_errs: np.array) -> np.array:
     
-    sensor_site_2f85, xpos_2f85 = get_xpos(m, d, "right_pad1_site")
+    sensor_site_2f85, xpos_2f85 = get_site_xpos(m, d, "right_pad1_site")
     
     # Compute 3D cartesian position error
     xpos_delta = xpos_target - xpos_2f85
@@ -76,7 +79,7 @@ def get_rot_err(t: int,
                 xrot_target: np.array,
                 rot_errs: np.array) -> np.array:
     
-    sensor_site_2f85, xrot_2f85 = get_xrot(m, d, "right_pad1_site") 
+    sensor_site_2f85, xrot_2f85 = get_site_xrot(m, d, "right_pad1_site") 
     xrot_2f85 = xrot_2f85.reshape(3, 3) # Rgc
      
     #########################################################################################################################

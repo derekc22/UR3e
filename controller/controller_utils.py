@@ -2,6 +2,9 @@ import numpy as np
 import mujoco
 from scipy.spatial.transform import Rotation as R
 from typing import Callable
+from utils import (
+    get_site_xpos, get_site_xquat, get_site_xrot,
+    get_grasp_force)
 
 
 ################################################################################################################################################################################################################################################
@@ -9,32 +12,6 @@ from typing import Callable
 ################################################################################################################################################################################################################################################
 
 
-def get_joint_torques(d):
-    joints = [
-        "shoulder_pan_actuatorfrc",
-        "shoulder_lift_actuatorfrc",
-        "elbow_actuatorfrc",
-        "wrist_1_actuatorfrc",
-        "wrist_2_actuatorfrc",
-        "wrist_3_actuatorfrc",
-        "fingers_actuatorfrc"
-    ]
-    return np.array([ d.sensor(joint).data[0] for joint in joints ])
-
-
-
-
-
-def get_arm_qpos(d: mujoco.MjData) -> np.array:
-    return d.qpos[:6]
-
-
-
-def load_model(model_path: str) -> tuple[mujoco.MjModel, mujoco.MjData]:    
-    m = mujoco.MjModel.from_xml_path(model_path)
-    d = mujoco.MjData(m)
-    
-    return m, d
 
 
 
@@ -130,40 +107,9 @@ def update_tot_errs(tot_errs: np.array,
     tot_errs[:] += err
 
 
-def reset(m: mujoco.MjModel, 
-          d: mujoco.MjData, 
-          intialization: str = 'home') -> None :
-    init_qp = np.array(m.keyframe(intialization).qpos)
-    mujoco.mj_resetData(m, d) 
-    d.qpos[:] = init_qp
-    mujoco.mj_step(m, d)
 
 
 
-def get_xpos(m: mujoco.MjModel, 
-             d: mujoco.MjData, 
-             site: str) -> tuple[int, np.array]:
-    site_id = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_SITE, site)
-    return site_id, d.site(site_id).xpos
-
-
-# def get_xquat(m, d, site):
-#     site_id = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_SITE, site)
-#     # xmat = d.site(site_id).xmat.copy()
-#     xmat = np.array(d.site(site_id).xmat).reshape(3, 3)
-#     return site_id, R.from_matrix(xmat).as_quat()
-
-
-def get_xrot(m: mujoco.MjModel, 
-             d: mujoco.MjData, 
-             site: str) -> tuple[int, np.array]:
-    site_id = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_SITE, site)
-    return site_id, d.site(site_id).xmat
-
-
-def get_grip_ctrl(d):    
-    # print(d.sensor("fingers_actuatorfrc").data)
-    return d.sensor("fingers_actuatorfrc").data # actuatorfrc (0, 255) ???
 
 
 
@@ -184,8 +130,8 @@ def grip_ctrl(m: mujoco.MjData,
 def get_task_space_state(m: mujoco.MjModel, 
                          d: mujoco.MjData) -> np.array:
     
-    _, xpos_2f85 = get_xpos(m, d, "right_pad1_site")
-    _, xrot_2f85 = get_xrot(m, d, "right_pad1_site")
+    _, xpos_2f85 = get_site_xpos(m, d, "right_pad1_site")
+    _, xrot_2f85 = get_site_xrot(m, d, "right_pad1_site")
     xrot_2f85 = R.from_matrix(xrot_2f85.reshape(3, 3)).as_rotvec()
     grip_2f85 = get_grasp_force(d)[0:1] #get_grip_ctrl(d)
 
