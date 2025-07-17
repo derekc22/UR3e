@@ -1,6 +1,7 @@
 # UR3e Robot Gymnasium Environment
 
-<img src="./media/capture.png" alt="UR3e Robot in MuJoCo simulation" width="400"/>
+<!-- <img src="./media/capture.png" alt="UR3e Robot in MuJoCo simulation" width="400"/> -->
+<img src="./media/record.gif" alt="UR3e Robot in MuJoCo simulation GIF" width="400"/>
 
 ## Installation
 
