@@ -6,51 +6,166 @@ from utils import *
 
 
 
-################################################################################################################################################################################################################################################
-# main.xml
-################################################################################################################################################################################################################################################
 
-
-
-
-###################### SHORTHANDS ############################
-
-def get_ur3e_qpos(d: mujoco.MjData) -> np.array:
-    return d.qpos[:6]
-
-
-def get_ur3e_qvel(d: mujoco.MjData) -> np.array:
-    return d.qvel[:6]
-
-
-def get_robot_qpos(d: mujoco.MjData) -> np.array:
-    return d.qpos[:14]
-
-
-def get_robot_qvel(d: mujoco.MjData) -> np.array:
-    return d.qvel[:14]
-
-
-def get_mug_qpos(d: mujoco.MjData) -> np.array:
+def get_mug_qpos(d: mujoco.MjData) -> np.ndarray:
     return d.qpos[14:21]
 
 
-def get_2f85_xpos(m: mujoco.MjModel,
-                  d: mujoco.MjData) -> np.array:
-    _, xpos_2f85 = get_site_xpos(m, d, "right_pad1_site")
-    return xpos_2f85
-
-
 def get_ghost_xpos(m: mujoco.MjModel, 
-                   d: mujoco.MjData) -> np.array:
-    _, ghost_xpos = get_body_xpos(m, d, "ghost")
-    return ghost_xpos
+                   d: mujoco.MjData) -> np.ndarray:
+    return get_body_xpos(m, d, "ghost")
 
 
 def get_mug_xpos(m: mujoco.MjModel, 
-                 d: mujoco.MjData) -> np.array:
-    _, mug_xpos = get_body_xpos(m, d, "fish")
-    return mug_xpos
+                 d: mujoco.MjData) -> np.ndarray:
+    return get_body_xpos(m, d, "fish")
+
+
+
+
+
+
+# def init_collision_cache(m: mujoco.MjModel) -> tuple:
+#     # ---------- names you may need to update when renaming ------------
+#     finger_names = {
+#         # "left_driver", "right_driver",
+#         # "left_spring_link", "right_spring_link",
+#         # "left_follower", "right_follower",
+#         "left_pad", "right_pad",
+#         # "left_pad1", "right_pad1",        # (these are not bodies dumbass)
+#         # "left_pad2", "right_pad2",        # (these are not bodies dumbass)   
+#         # "left_silicone_pad", "right_silicone_pad",
+#     }
+#     arm_names = {
+#         "robot_base", "shoulder_link", "upper_arm_link",
+#         "forearm_link", "wrist_1_link", "wrist_2_link",
+#         "wrist_3_link", "gripper_base",
+#         *finger_names,
+#     }
+#     # ---------- convert body names to integer body‑ids -----------------
+#     finger_bodies = { get_body_id(m, finger) for finger in finger_names }
+#     arm_bodies = { get_body_id(m, arm) for arm in arm_names }
+#     table_body = get_body_id(m, "table")
+    
+#     return (finger_bodies, arm_bodies, table_body)
+
+
+
+def init_collision_cache(m: mujoco.MjModel) -> tuple:
+
+    finger_root_id = get_body_id(m, "robotiq_base_mount")
+    arm_root_id = get_body_id(m, "robot_base")
+    
+    finger_bodies = { finger_root_id, *get_children_deep(m, finger_root_id) }
+    arm_bodies = { arm_root_id, *get_children_deep(m, arm_root_id) }
+    table_body = get_body_id(m, "table")
+    
+    return (finger_bodies, arm_bodies, table_body)
+
+
+def get_robot_collision(m: mujoco.MjModel,
+                        d: mujoco.MjData,
+                        collision_cache: tuple) -> int:
+    """
+    Return 1 if any arm or gripper body (excluding finger‑to‑finger pairs)
+    touches the table or another arm/gripper body.  Otherwise return 0.
+    Finger‑to‑finger contacts are ignored so that other routines can still
+    inspect them.
+    """
+
+    finger_bodies, arm_bodies, table_body = collision_cache
+
+    # ------------------------------------------------------------
+    # Inspect active contacts
+    # ------------------------------------------------------------
+    for k in range(d.ncon):
+        c = d.contact[k]
+        b1 = m.geom_bodyid[c.geom1]
+        b2 = m.geom_bodyid[c.geom2]
+
+        # ignore pure finger–finger contact
+        if b1 in finger_bodies and b2 in finger_bodies:
+            continue
+
+        # detect arm–arm or arm–table contact
+        if (b1 in arm_bodies and b2 in arm_bodies):
+        # if ((b1 in arm_bodies and b2 in arm_bodies) or
+        #     (b1 in arm_bodies and b2 == table_body) or
+        #     (b2 in arm_bodies and b1 == table_body)):
+            return 1
+            # exit()
+    return 0
+
+
+
+# collision_cache = {}
+
+# def arm_collision(model: mujoco.MjModel,
+#                   data: mujoco.MjData) -> int:
+#     """
+#     Return 1 if any arm or gripper body (excluding finger‑to‑finger pairs)
+#     touches the table or another arm/gripper body.  Otherwise return 0.
+#     Finger‑to‑finger contacts are ignored so that other routines can still
+#     inspect them.
+#     """
+#     # ------------------------------------------------------------
+#     # Build and memoise lookup tables the first time we see a model
+#     # ------------------------------------------------------------
+#     cache_entry = collision_cache.get(id(model))
+#     if cache_entry is None:
+#         # ---------- names you may need to update when renaming ------------
+#         finger_names = {
+#             "left_driver", "right_driver",
+#             "left_spring_link", "right_spring_link",
+#             "left_follower", "right_follower",
+#             "left_pad", "right_pad",
+#             "left_pad1", "right_pad1",        # include sub‑pads if present
+#             "left_pad2", "right_pad2",
+#             "left_gripper_pad", "right_gripper_pad",
+#         }
+#         arm_names = {
+#             "robot_base", "shoulder_link", "upper_arm_link",
+#             "forearm_link", "wrist_1_link", "wrist_2_link",
+#             "wrist_3_link", "gripper_base",
+#             *finger_names,
+#         }
+#         # ---------- convert body names to integer body‑ids -----------------
+#         finger_bodies = {
+#             mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, n)
+#             for n in finger_names
+#             # if mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, n) != -1
+#         }
+#         arm_bodies = {
+#             mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, n)
+#             for n in arm_names
+#             if mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, n) != -1
+#         }
+#         table_body = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "table")
+#         if table_body == -1:
+#             raise ValueError("Body named 'table' not found in model.")
+#         cache_entry = (finger_bodies, arm_bodies, table_body)
+#         collision_cache[id(model)] = cache_entry
+
+#     finger_bodies, arm_bodies, table_body = cache_entry
+
+#     # ------------------------------------------------------------
+#     # Inspect active contacts
+#     # ------------------------------------------------------------
+#     for k in range(data.ncon):
+#         c = data.contact[k]
+#         b1 = model.geom_bodyid[c.geom1]
+#         b2 = model.geom_bodyid[c.geom2]
+
+#         # ignore pure finger–finger contact
+#         if b1 in finger_bodies and b2 in finger_bodies:
+#             continue
+
+#         # detect arm–arm or arm–table contact
+#         if ((b1 in arm_bodies and b2 in arm_bodies) or
+#             (b1 in arm_bodies and b2 == table_body) or
+#             (b2 in arm_bodies and b1 == table_body)):
+#             return 1
+#     return 0
 
 
 
@@ -66,10 +181,7 @@ def get_mug_xpos(m: mujoco.MjModel,
 
 
 
-
-
-
-def get_2f85_home2(m, d):
+"""def get_2f85_home2(m, d):
 
     # Helper function to apply a transformation (rotation + translation)
     def transform_point(pos, quat, point):
@@ -139,12 +251,12 @@ def get_2f85_home(m, d):
     transforms = []
     for body in bodies:
         # print(body)
-        _, pos = get_body_xpos(m, d, body)
-        _, quat = get_body_xquat(m, d, body)
+        pos = get_body_xpos(m, d, body)
+        quat = get_body_xquat(m, d, body)
         transforms.append( ( tuple(pos), tuple(quat) ) )
         
     # Local position of the site within the right_pad body
-    _, site_local_pos = get_site_xpos(m, d, "right_pad1_site")
+    site_local_pos = get_site_xpos(m, d, "right_pad1_site")
 
     # Initial global transformation
     global_pos = np.array([0, 0, 0])
@@ -159,3 +271,4 @@ def get_2f85_home(m, d):
     site_global_pos = transform_point(global_pos, global_quat.as_quat(), site_local_pos)
 
     return site_global_pos
+"""

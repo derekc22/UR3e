@@ -27,7 +27,6 @@ register(
 
 # env = gym.make("gymnasium_env/ur3e-v0", render_mode="human")
 env = gym.make("gymnasium_env/ur3e-v0", render_mode="rgb_array")
-print(env.metadata)
 
 
 obs, info = env.reset()

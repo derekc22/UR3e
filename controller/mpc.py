@@ -7,9 +7,9 @@ np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 matplotlib.use("Agg")  # Non‑interactive backend
 
 from controller.controller_utils import load_model, reset, get_task_space_state, get_joint_torques
-from gen_traj import gen_traj_l
+from controller.build_traj import build_traj_l
 from controller.aux import (
-    build_trajectory,
+    load_trajectory,
     build_interpolated_trajectory,
     cleanup,
 )
@@ -41,11 +41,11 @@ def main() -> None:
     mpc = MPCController(m)
 
     # Build reference trajectory (uses your original generator and utilities)
-    gen_traj_l()
+    build_traj_l()
     traj_target = (
         build_interpolated_trajectory(n, hold, trajectory_fpath)
         if n
-        else build_trajectory(hold, trajectory_fpath)
+        else load_trajectory(hold, trajectory_fpath)
     )
     T = traj_target.shape[0]
 
