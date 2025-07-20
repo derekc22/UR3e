@@ -40,7 +40,25 @@ def get_joint_id(m: mujoco.MjModel,
     return mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, joint)
 
 
-###################### BODY XPOS, XQUAT, XMAT, XROTVEC ############################
+def get_body_name(m: mujoco.MjModel,
+                  id: int) -> str:
+    return mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, id)
+
+
+def get_site_name(m: mujoco.MjModel,
+                  id: int) -> str:
+    return mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_SITE, id)
+
+
+def get_joint_name(m: mujoco.MjModel,
+                   id: int) -> str:
+    return mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_JOINT, id)
+
+
+
+
+
+###################### BODY XPOS, XQUAT, R, XMAT, XROTVEC ############################
 
 def get_body_xpos(m: mujoco.MjModel, 
                   d: mujoco.MjData, 
@@ -58,9 +76,10 @@ def get_body_xquat(m: mujoco.MjModel,
     return R.from_matrix(xmat).as_quat()
 
 
-def get_body_xquat_R(m: mujoco.MjModel, 
-                   d: mujoco.MjData,
-                   body: str) -> R:
+def get_body_R(m: mujoco.MjModel, 
+                     d: mujoco.MjData,
+                     body: str) -> R:
+    """Return scipy Rotation object"""
     xmat = get_body_xmat(m, d, body).reshape(3, 3)
     return R.from_matrix(xmat)
 
@@ -79,7 +98,7 @@ def get_body_xrotvec(m: mujoco.MjModel,
     return R.from_matrix(xmat).as_rotvec()
 
 
-###################### SITE XPOS, XQUAT, XMAT, XROTVEC ############################
+###################### SITE XPOS, XQUAT, R, XMAT, XROTVEC ############################
 
 def get_site_xpos(m: mujoco.MjModel, 
                   d: mujoco.MjData, 
@@ -97,9 +116,10 @@ def get_site_xquat(m: mujoco.MjModel,
     return R.from_matrix(xmat).as_quat()
 
 
-def get_site_xquat_R(m: mujoco.MjModel, 
-                   d: mujoco.MjData,
-                   site: str) -> R:
+def get_site_R(m: mujoco.MjModel, 
+                     d: mujoco.MjData,
+                     site: str) -> R:
+    """Return scipy Rotation object"""
     xmat = get_site_xmat(m, d, site).reshape(3, 3)
     return R.from_matrix(xmat)
 

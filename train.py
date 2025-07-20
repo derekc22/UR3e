@@ -55,8 +55,7 @@ def main():
 
     # Train the model
     model.learn(
-        # total_timesteps=1_000_000,
-        total_timesteps=100,
+        total_timesteps=100000,
         callback=eval_callback
     )
 

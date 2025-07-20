@@ -20,4 +20,8 @@ np.set_printoptions(
 # print(build_interpolated_trajectory(2, 3, trajectory_fpath))
 # load_trajectory_file(trajectory_fpath)
 
-build_traj_l()
+
+t1 = [1, 2, 3, 4,  5,  6,  7]
+t2 = [7, 8, 9, 10, 11, 12, 13]
+
+print(interpolate(t1, t2))

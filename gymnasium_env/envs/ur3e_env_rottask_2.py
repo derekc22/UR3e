@@ -6,8 +6,6 @@ from mujoco import MjModel
 import mujoco
 from gymnasium_env.gymnasium_env_utils import *
 from controller.move_l_task import *
-from controller.build_traj import build_gripless_traj_mug
-from controller.controller_utils import get_task_space_state
 from utils import *
 np.set_printoptions(
     linewidth=400,     # Wider output (default is 75)
@@ -16,7 +14,7 @@ np.set_printoptions(
     suppress=False     # Do not suppress small floating point numbers
 )
 
-render_fps = 50
+render_fps = 1
 
 class UR3eEnv(MujocoEnv):
 
@@ -34,9 +32,6 @@ class UR3eEnv(MujocoEnv):
         # Temporary MujocoEnv init to access model parameters
         self._initialize_model(model_path)
         self.episode = 0
-        self.gripless_traj = None
-        self.t = None
-        
 
         obs_dim = 42 
         # robot qpos  (14) + 
@@ -67,12 +62,8 @@ class UR3eEnv(MujocoEnv):
         # high = np.array([0.9, 0.9, 0.6, np.pi, np.pi, np.pi, 0.255])
         
         # New action space: [rot_x, rot_y, rot_z, grip]
-        # low = np.array([-np.pi, -np.pi, -np.pi, 0])
-        # high = np.array([np.pi, np.pi, np.pi,    1])
-
-        # New action space: [grip]
-        low = np.array([0])
-        high = np.array([1])
+        low = np.array([-np.pi, -np.pi, -np.pi, 0])
+        high = np.array([np.pi, np.pi, np.pi,   1])
         
         self.action_space = spaces.Box(
             low=low, 
@@ -84,8 +75,8 @@ class UR3eEnv(MujocoEnv):
 
         # PID gains (tune these as needed)
         self.pos_gains = {
-            'kp': np.diag([120, 120, 120]),
-            'kd': np.diag([20, 20, 20]),
+            'kp': np.diag([20, 20, 20]),
+            'kd': np.diag([5, 5, 5]),
             # 'ki': np.diag([10, 10, 10])
             'ki': np.diag([0, 0, 0])
         }
@@ -121,20 +112,15 @@ class UR3eEnv(MujocoEnv):
     def step(self, action):
         
         # New action space: [rot_x, rot_y, rot_z, grip]
-        # traj = np.hstack([
-        #     get_mug_xpos(self.model, self.data), action
-        # ])
-
-        # New action space: [grip]
-        traj_i = np.hstack([
-            self.gripless_traj[self.t], action
+        traj = np.hstack([
+            get_mug_xpos(self.model, self.data), action
         ])
-        u = ctrl(0, self.model, self.data, traj_i, 
+
+        u = ctrl(0, self.model, self.data, traj, 
                  self.pos_gains, self.rot_gains, 
                  self.pos_errs, self.rot_errs, 
                  self.tot_pos_errs, self.tot_rot_errs
                 )
-        self.t += 1
 
         self.do_simulation(u, self.frame_skip)
         observation = self._get_obs()
@@ -172,21 +158,16 @@ class UR3eEnv(MujocoEnv):
 
     def reset_model(self):
         init_qpos_noisy, init_qvel = get_stochastic_init(self.model)
+        
+        # self.set_state(init_qpos, init_qvel)
         self.set_state(init_qpos_noisy, init_qvel)
 
-        stop = np.hstack([
-            get_mug_xpos(self.model, self.data), [0, 0, 0]
-        ])
-        self.gripless_traj = build_gripless_traj_mug(
-            get_task_space_state(self.model, self.data)[:-1], stop
-        )
-        self.t = 0
         self.tot_pos_errs = np.zeros(3)
         self.tot_rot_errs = np.zeros(3)
         
         print("Episode: ", self.episode)
         self.episode += 1
-        
+
         return self._get_obs()
     
 

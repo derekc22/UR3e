@@ -16,9 +16,38 @@ def get_ghost_xpos(m: mujoco.MjModel,
     return get_body_xpos(m, d, "ghost")
 
 
+# def get_mug_xpos(m: mujoco.MjModel, 
+#                  d: mujoco.MjData) -> np.ndarray:
+#     return get_body_xpos(m, d, "fish")
+
 def get_mug_xpos(m: mujoco.MjModel, 
                  d: mujoco.MjData) -> np.ndarray:
-    return get_body_xpos(m, d, "fish")
+    return get_site_xpos(m, d, "handle_site")
+
+
+def get_stochastic_init(m: mujoco.MjModel, 
+                        keyframe: str = 'home') -> tuple:
+    init_qpos = m.keyframe(keyframe).qpos
+    init_qvel = m.keyframe(keyframe).qvel
+    
+    noise = np.hstack([
+        np.zeros(m.nq-7),
+        np.random.uniform(low=-0.1, high=0.0, size=2),
+        np.zeros(5),
+    ])    
+    
+    return (init_qpos + noise, init_qvel)
+
+
+def reset_mug_stochastic(m: mujoco.MjModel, 
+                         d: mujoco.MjData, 
+                         keyframe: str = 'home') -> None:
+    """Reset mug position stochastically"""
+    init_qpos_noisy, init_qvel = get_stochastic_init(m, keyframe=keyframe)
+    mujoco.mj_resetData(m, d) 
+    d.qpos = init_qpos_noisy
+    d.qvel = init_qvel
+    mujoco.mj_step(m, d)
 
 
 
@@ -37,7 +66,7 @@ def get_mug_xpos(m: mujoco.MjModel,
 #         # "left_silicone_pad", "right_silicone_pad",
 #     }
 #     arm_names = {
-#         "robot_base", "shoulder_link", "upper_arm_link",
+#         "robot_base", #"shoulder_link", #"upper_arm_link",
 #         "forearm_link", "wrist_1_link", "wrist_2_link",
 #         "wrist_3_link", "gripper_base",
 #         *finger_names,
@@ -92,6 +121,7 @@ def get_robot_collision(m: mujoco.MjModel,
         # if ((b1 in arm_bodies and b2 in arm_bodies) or
         #     (b1 in arm_bodies and b2 == table_body) or
         #     (b2 in arm_bodies and b1 == table_body)):
+            print(get_body_name(m, b1), get_body_name(m, b2))
             return 1
             # exit()
     return 0
