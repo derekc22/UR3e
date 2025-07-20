@@ -52,15 +52,18 @@ def main():
     t = time.time() - start
 
 
-    collision_cache = init_collision_cache(m)    
+    collision_cache = init_collision_cache(m)
+    # for  c in collision_cache:
+    #     for i in c:
+    #         print(get_body_name(m, i))
+    # exit()
     
     while t < 1000:
         mujoco.mj_step(m, d)
         viewer.sync()
         t = time.time() -  start
-        
 
-        print(get_robot_collision(m, d, collision_cache))
+        get_robot_collision(m, d, collision_cache)
         
         # print(get_children_deep(m, id_))
         # print(get_children_deep(m, get_body_id(m, "robot_base")))

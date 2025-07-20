@@ -186,9 +186,10 @@
                             <geom class="pad_box1" name="right_pad1"/>
                             <geom class="pad_box2" name="right_pad2"/>
                             
-                            <site name="right_pad1_site" pos="0 -0.0026 0.028125" type="box" size="0.011 0.004 0.009375" rgba="0 0 1 1"/>
+                            <!-- <site name="right_pad1_site" pos="0 -0.0026 0.028125" type="box" size="0.011 0.004 0.009375" rgba="0 0 1 1"/> -->
                             <!-- <site name="right_pad2_site" pos="0 -0.0026 0.009375" type="box" size="0.011 0.004 0.009375" rgba="0 0 1 1"/> -->
-                            
+                            <site name="right_pad1_site" pos="0 -0.0025 0.0185" quat="0.5 0.5 -0.5 -0.5" type="box" size="0.011 0.004 0.009375" rgba="0 0 1 1"/>
+
                             <inertial mass="0.0035" pos="0 -0.0025 0.0185" quat="0.707107 0 0 0.707107" diaginertia="4.73958e-07 3.64583e-07 1.23958e-07"/>
                             <geom class="visual" mesh="gripper_pad"/>
                             <body name="right_silicone_pad">
@@ -257,9 +258,11 @@
     </body> -->
 
     <!-- FAKE FISH (AKA MUG) -->
-    <body name="fish" pos="0.5 -0.15 0" quat="0 0 -0.7071 -0.7071" >
+    <!-- <body name="fish" pos="0.5 0.5 0" quat="0 0 -0.7071 -0.7071" > -->
+    <body name="fish">
       <joint name="fish" type="free" limited="false"/>
       <geom name="fish" pos="0 0 0" quat="1 0 0 0" type="mesh" group="1" mesh="fish"/>
+      <site name="handle_site" pos="0.075 0.04 0.0" type="box" size="0.011 0.004 0.009375" rgba="0 0 1 1"/>
     </body>
 
     <!-- FAKE FISH (AKA BOX) -->
@@ -402,7 +405,7 @@
 
   <keyframe>
     <key name="home" 
-      qpos="0.5 -0.15 0 0 0 -0.7071 -0.7071 0 0 0 0 0 0 0 0.43 0.403 0.029 0 0 0 0"
+      qpos="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.4 0.5 0 0.7071 0.7071 0 0"
       qvel="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
     />
   </keyframe>

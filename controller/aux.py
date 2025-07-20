@@ -7,31 +7,50 @@ from datetime import datetime
 from controller.plot import *
 
 
-def cleanup(traj_target: np.array, 
-            traj_true: np.array,
-            ctrls: np.array,
-            actuator_frc: np.array,
+def get_dtn() -> datetime:
+    return datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+
+def plot_plots(traj_target: np.ndarray, 
+               traj_true: np.ndarray,
+               ctrls: np.ndarray,
+               actuator_frc: np.ndarray,
+               ctrl_mode: str,
+               save_fpath: str = None,
+               log_fpath: str = None,
+               **kwargs: any) -> None:
+    
+    if log_fpath and not save_fpath:
+        save_fpath = log_fpath + get_dtn()
+        os.makedirs(save_fpath, exist_ok=True)
+    
+    if ctrl_mode == "j":
+        qpos_errs = kwargs.get("qpos_errs")
+        plot_trajectory_j(traj_target, traj_true, qpos_errs, save_fpath)
+    else:
+        pos_errs, rot_errs = (kwargs.get("pos_errs"), kwargs.get("rot_errs"))
+        plot_trajectory_l(traj_target, traj_true, pos_errs, rot_errs, save_fpath)
+        plot_3d_trajectory(traj_target, traj_true, pos_errs, save_fpath)
+        plot_2d_trajectory(traj_target, traj_true, pos_errs, save_fpath)
+        
+    plot_ctrl(ctrls, actuator_frc, save_fpath)
+
+
+
+def cleanup(traj_target: np.ndarray, 
+            traj_true: np.ndarray,
+            ctrls: np.ndarray,
+            actuator_frc: np.ndarray,
             trajectory_fpath: str, 
             log_fpath: str, 
             yml: dict,
             ctrl_mode: str, 
             **kwargs: any) -> None:
 
-    dtn = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    save_fpath = log_fpath + dtn
+    save_fpath = log_fpath + get_dtn()
     os.makedirs(save_fpath, exist_ok=True)
-    
-    if ctrl_mode in ("l", "l_task"):
-        pos_errs, rot_errs = (kwargs.get("pos_errs"), kwargs.get("rot_errs"))
-        plot_trajectory_l(traj_target, traj_true, pos_errs, rot_errs, save_fpath)
-        plot_3d_trajectory(traj_target, traj_true, pos_errs, save_fpath)
-        plot_2d_trajectory(traj_target, traj_true, pos_errs, save_fpath)
-    else:
-        qpos_errs = kwargs.get("qpos_errs")
-        plot_trajectory_j(traj_target, traj_true, qpos_errs, save_fpath)
-        
-    plot_ctrl(ctrls, actuator_frc, save_fpath)
-        
+
+    plot_plots(traj_target, traj_true, ctrls, actuator_frc, ctrl_mode, save_fpath=save_fpath, **kwargs)
+
     with open(f"{save_fpath}/log.yml", 'w') as f: yaml.dump(yml, f)
     shutil.copy(trajectory_fpath, save_fpath)
 

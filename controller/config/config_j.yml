@@ -1,5 +1,4 @@
 hold: 320
-n: NULL
 qpos:
   kp: 
     - 20.0 # Shoulder Pan

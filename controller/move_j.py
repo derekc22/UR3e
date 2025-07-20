@@ -21,9 +21,9 @@ import yaml
 def ctrl(t: int, 
          m: mujoco.MjModel, 
          d: mujoco.MjData,
-         traj_t: np.array,
+         traj_t: np.ndarray,
          qpos_gains: dict,
-         qpos_errs: np.array) -> np.ndarray:
+         qpos_errs: np.ndarray) -> np.ndarray:
     
     qpos_u = pd_ctrl(t, m, d, traj_t[:-1], qpos_gains, get_qpos_err, qpos_errs)    
     grip_u = grip_ctrl(m, traj_t[-1])
@@ -41,8 +41,8 @@ def ctrl(t: int,
 def get_qpos_err(t: int, 
                  m: mujoco.MjModel, 
                  d: mujoco.MjData, 
-                 qpos_target: np.array,
-                 qpos_errs: np.array) -> np.ndarray:
+                 qpos_target: np.ndarray,
+                 qpos_errs: np.ndarray) -> np.ndarray:
     
     qpos_delta = qpos_target - get_ur3e_qpos(d)
     update_errs(t, qpos_errs, qpos_delta)
@@ -64,7 +64,6 @@ def main():
     config_fpath = "controller/config/config_j.yml"
     log_fpath = "controller/logs/logs_j/"
     ctrl_mode = "j"
-    num_ur3e_joints = 6
 
     with open(config_fpath, "r") as f: yml = yaml.safe_load(f)
     qpos_gains = { k:np.diag(v) for k, v in yml["qpos"].items() } 
@@ -77,14 +76,14 @@ def main():
     # total = 14 nq, 14 nv, 7 nu
     m, d = load_model(model_path)
 
-    build_traj_j()
+    build_traj_j(trajectory_fpath)
     # @DEPRECATED
     # traj_target = build_interpolated_trajectory(n, hold, trajectory_fpath) if n else load_trajectory(hold, trajectory_fpath)
     traj_target = load_trajectory(hold, trajectory_fpath)
     T = traj_target.shape[0]
     traj_true = np.zeros_like(traj_target)
 
-    qpos_errs = np.zeros(shape=(T, num_ur3e_joints))
+    qpos_errs = np.zeros(shape=(T, 6))
     ctrls = np.zeros(shape=(T, m.nu))
     actuator_frc = np.zeros(shape=(T, m.nu))
 
@@ -96,7 +95,7 @@ def main():
     save_flag = True
 
     try:
-        for t in range (T):
+        for t in range(T):
             viewer.sync()
     
             u = ctrl(t, m, d, traj_target[t, :], qpos_gains, qpos_errs)

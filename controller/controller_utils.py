@@ -13,10 +13,10 @@ from utils import *
 def pd_ctrl(t: int, 
             m: mujoco.MjModel, 
             d: mujoco.MjData, 
-            traj_target: np.array, 
+            traj_target: np.ndarray, 
             gains: dict, 
             err_func: Callable,
-            errs: np.array) -> np.ndarray:
+            errs: np.ndarray) -> np.ndarray:
     
     theta_delta = err_func(t, m, d, traj_target, errs)
     
@@ -49,12 +49,12 @@ def pd_ctrl(t: int,
 
 
 def update_errs(t: int, 
-                errs: np.array, 
-                err: np.array) -> None:
+                errs: np.ndarray, 
+                err: np.ndarray) -> None:
     errs[t, :] = err
 
-def update_tot_errs(tot_errs: np.array,
-                    err: np.array) -> None:
+def update_tot_errs(tot_errs: np.ndarray,
+                    err: np.ndarray) -> None:
     tot_errs[:] += err
 
 
@@ -70,7 +70,7 @@ def get_gravity_compensation(d: mujoco.MjData) -> np.ndarray:
 
 
 def grip_ctrl(m: mujoco.MjData, 
-              traj_t: np.array) -> np.ndarray:
+              traj_t: np.ndarray) -> np.ndarray:
     ctrl_range = m.actuator_ctrlrange[-1] # 'fingers_actuator' is the last actuator
     return traj_t * ctrl_range[1] 
 

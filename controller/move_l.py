@@ -9,7 +9,7 @@ from controller.controller_utils import (
 )
 from utils import (
     load_model, reset, get_site_id,
-    get_site_xpos, get_site_xquat_R, get_site_xmat, 
+    get_site_xpos, get_site_R, get_site_xmat, 
     get_joint_torques
 )
 from controller.build_traj import build_traj_l
@@ -25,15 +25,14 @@ from scipy.spatial.transform import Rotation as R
 def ctrl(t: int,
          m: mujoco.MjModel, 
          d: mujoco.MjData,
-         traj_t: np.array,
+         traj_t: np.ndarray,
          pos_gains: dict,
          rot_gains: dict,
-         pos_errs: np.array,
-         rot_errs: np.array) -> np.ndarray:
+         pos_errs: np.ndarray,
+         rot_errs: np.ndarray) -> np.ndarray:
     
     pos_u = pd_ctrl(t, m, d, traj_t[:3], pos_gains, get_pos_err, pos_errs)    
     rot_u = pd_ctrl(t, m, d, traj_t[3:6], rot_gains, get_rot_err, rot_errs)  # rotation matrix
-
     grip_u = grip_ctrl(m, traj_t[-1])
     
     return np.hstack([
@@ -48,8 +47,8 @@ def ctrl(t: int,
 def get_pos_err(t: int, 
                 m: mujoco.MjModel, 
                 d: mujoco.MjData, 
-                xpos_target: np.array,
-                pos_errs: np.array) -> np.ndarray:
+                xpos_target: np.ndarray,
+                pos_errs: np.ndarray) -> np.ndarray:
     
     xpos_2f85 = get_site_xpos(m, d, "right_pad1_site")
     
@@ -77,8 +76,8 @@ def get_pos_err(t: int,
 # def get_rot_err(t: int, 
 #                 m: mujoco.MjModel, 
 #                 d: mujoco.MjData, 
-#                 xrot_target: np.array,
-#                 rot_errs: np.array) -> np.ndarray:
+#                 xrot_target: np.ndarray,
+#                 rot_errs: np.ndarray) -> np.ndarray:
     
 #     xrot_2f85 = get_site_xmat(m, d, "right_pad1_site") 
 #     xrot_2f85 = xrot_2f85.reshape(3, 3) # Rgc
@@ -115,15 +114,15 @@ def get_pos_err(t: int,
 def get_rot_err(t: int, 
                 m: mujoco.MjModel, 
                 d: mujoco.MjData, 
-                xrot_target: np.array,
-                rot_errs: np.array) -> np.ndarray:
+                xrot_target: np.ndarray,
+                rot_errs: np.ndarray) -> np.ndarray:
     
     xrot_2f85 = get_site_xmat(m, d, "right_pad1_site") 
     xrot_2f85 = xrot_2f85.reshape(3, 3) # Rgc
      
     # Quaternion approach
     # Convert current and target rotation matrices to quaternions
-    q = get_site_xquat_R(m, d, "right_pad1_site")
+    q = get_site_R(m, d, "right_pad1_site")
     q_d = R.from_rotvec(xrot_target)
     # Compute the inverse of the current quaternion
     q_inv = q.inv()
@@ -163,7 +162,6 @@ def main():
     config_path = "controller/config/config_l.yml"
     log_fpath = "controller/logs/logs_l/"
     ctrl_mode = "l"
-    num_ur3e_joints = 6
 
     with open(config_path, "r") as f: yml = yaml.safe_load(f)
     pos_gains = { k:np.diag(v) for k, v in yml["pos"].items() } 
@@ -177,7 +175,7 @@ def main():
     # total = 14 nq, 14 nv, 7 nu
     m, d = load_model(model_path)
 
-    build_traj_l()
+    build_traj_l(trajectory_fpath)
     # @DEPRECATED
     # traj_target = build_interpolated_trajectory(n, hold, trajectory_fpath) if n else load_trajectory(hold, trajectory_fpath)
     traj_target = load_trajectory(hold, trajectory_fpath)
@@ -198,7 +196,7 @@ def main():
     save_flag = True
 
     try:
-        for t in range (T):
+        for t in range(T):
             viewer.sync()
     
             u = ctrl(t, m, d, traj_target[t, :], pos_gains, rot_gains, pos_errs, rot_errs)
@@ -237,10 +235,3 @@ def main():
 if __name__ == "__main__":
     
     main()
-    
-
-    # Compute rotational error (o3)
-    
-    # R_err = xrot_target @ xrot_2f85.T                 # desired-to-current rotation
-    # skew = 0.5 * (R_err - R_err.T)
-    # xrot_delta =  np.array([skew[2, 1], skew[0, 2], skew[1, 0]])
