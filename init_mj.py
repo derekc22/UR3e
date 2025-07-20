@@ -13,6 +13,11 @@ np.set_printoptions(
 
 
 
+
+
+
+
+
 def main():
 
     # m_path = "assets/ur3e/ur3e.xml"
@@ -46,10 +51,23 @@ def main():
     start = time.time()
     t = time.time() - start
 
+
+    collision_cache = init_collision_cache(m)    
+    
     while t < 1000:
         mujoco.mj_step(m, d)
         viewer.sync()
         t = time.time() -  start
+        
+
+        print(get_robot_collision(m, d, collision_cache))
+        
+        # print(get_children_deep(m, id_))
+        # print(get_children_deep(m, get_body_id(m, "robot_base")))
+        # print(id_)
+        # x = [get_body_id(m, f) for f in finger_bodies ]
+        # print(x)
+
 
         # print("nq: ", m.nq)
         # print("nv: ", m.nv)
@@ -64,8 +82,11 @@ def main():
         # print(position)
         # print(get_2f85_home2(m, d))
         # print(get_2f85_home(m, d))
-        print(get_2f85_xpos(m, d))
+        # print(get_2f85_xpos(m, d))
         # exit()
+        
+        # print(m.jnt_range)
+        # print(len(m.jnt_range))
         
         # print(m.qpos0)
         # print(m.qvel0)

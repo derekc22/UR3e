@@ -5,21 +5,86 @@ np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 matplotlib.use('Agg')  # Set backend to non-interactive
 from controller.controller_utils import (
     get_task_space_state,
-    grip_ctrl, update_errs, update_tot_errs)
-from utils import (
-    load_model, reset,
-    get_site_xpos, get_site_xquat, get_site_xrot, get_joint_torques
+    grip_ctrl, update_errs, update_tot_errs
 )
-from scipy.spatial.transform import Rotation as R
-from gen_traj import gen_traj_l
-from controller.aux import build_trajectory, build_interpolated_trajectory, cleanup
+from utils import (
+    load_model, reset, get_site_id,
+    get_site_xpos, get_site_xquat_R, get_joint_torques,
+    get_jnt_ranges
+)
+from controller.build_traj import build_traj_l
+from controller.aux import load_trajectory, cleanup
 import yaml
-import time
+from scipy.spatial.transform import Rotation as R
 
     
 
+def get_pos_err(t: int, 
+                m: mujoco.MjModel, 
+                d: mujoco.MjData, 
+                xpos_target: np.array,
+                pos_errs: np.array,
+                tot_pos_errs: np.array) -> np.ndarray:
+
+    xpos_2f85 = get_site_xpos(m, d, "right_pad1_site")
+
+    # Position error
+    xpos_delta = xpos_target - xpos_2f85
+    update_errs(t, pos_errs, xpos_delta)
+    update_tot_errs(tot_pos_errs, xpos_delta)
+    
+    return xpos_delta
 
 
+
+# def get_rot_err(t: int, 
+#                 m: mujoco.MjModel, 
+#                 d: mujoco.MjData, 
+#                 xrot_target: np.array,
+#                 rot_errs: np.array,
+#                 tot_rot_errs: np.array) -> np.ndarray:
+    
+#     xrot_2f85 = get_site_xmat(m, d, "right_pad1_site") 
+#     xrot_2f85 = xrot_2f85.reshape(3, 3)
+    
+#     # Quaternion approach
+#     # Convert current and target rotation matrices to quaternions
+#     q = R.from_matrix(xrot_2f85).as_quat()   # [x, y, z, w]
+#     q_d = R.from_rotvec(xrot_target).as_quat()
+#     # q_d = R.from_matrix(xrot_target).as_quat()
+#     # Compute the inverse of the current quaternion
+#     q_inv = R.from_quat(q).inv()
+#     # Compute the relative quaternion: q_err = q_d * q⁻¹
+#     q_err = R.from_quat(q_d) * q_inv
+#     # Convert to rotation vector (axis-angle)
+#     xrot_delta = q_err.as_rotvec()
+#     update_errs(t, rot_errs, xrot_delta)
+#     update_tot_errs(tot_rot_errs, xrot_delta)
+    
+#     return xrot_delta
+
+def get_rot_err(t: int, 
+                m: mujoco.MjModel, 
+                d: mujoco.MjData, 
+                xrot_target: np.array,
+                rot_errs: np.array,
+                tot_rot_errs: np.array) -> np.ndarray:
+    
+    # Quaternion approach
+    # Convert current and target rotation matrices to quaternions
+    q = get_site_xquat_R(m, d, "right_pad1_site")
+    q_d = R.from_rotvec(xrot_target)
+    # Compute the inverse of the current quaternion
+    q_inv = q.inv()
+    # Compute the relative quaternion: q_err = q_d * q⁻¹
+    q_err = q_d * q_inv
+    # Convert to rotation vector (axis-angle)
+    xrot_delta = q_err.as_rotvec()
+    update_errs(t, rot_errs, xrot_delta)
+    update_tot_errs(tot_rot_errs, xrot_delta)
+    
+    return xrot_delta
+    
 
 
 def ctrl(t: int, 
@@ -31,37 +96,15 @@ def ctrl(t: int,
          pos_errs: np.array,
          rot_errs: np.array,
          tot_pos_errs: np.array,
-         tot_rot_errs: np.array) -> np.array:
+         tot_rot_errs: np.array) -> np.ndarray:
 
-    sensor_site_2f85, xpos_2f85 = get_site_xpos(m, d, "right_pad1_site")
-    _, xrot_2f85 = get_site_xrot(m, d, "right_pad1_site") 
-    xrot_2f85 = xrot_2f85.reshape(3, 3)
-        
-    # Position error
-    xpos_delta = traj_target[:3] - xpos_2f85
-    update_errs(t, pos_errs, xpos_delta)
-    update_tot_errs(tot_pos_errs, xpos_delta)
-    
-    # Orientation error (axis-angle)
-    xrot_target = traj_target[3:6]
 
-    # Quaternion approach
-    # Convert current and target rotation matrices to quaternions
-    q = R.from_matrix(xrot_2f85).as_quat()   # [x, y, z, w]
-    q_d = R.from_rotvec(xrot_target).as_quat()
-    # q_d = R.from_matrix(xrot_target).as_quat()
-    # Compute the inverse of the current quaternion
-    q_inv = R.from_quat(q).inv()
-    # Compute the relative quaternion: q_err = q_d * q⁻¹
-    q_err = R.from_quat(q_d) * q_inv
-    # Convert to rotation vector (axis-angle)
-    xrot_delta = q_err.as_rotvec()
-    update_errs(t, rot_errs, xrot_delta)
-    update_tot_errs(tot_rot_errs, xrot_delta)
+    xpos_delta = get_pos_err(t, m, d, traj_target[:3], pos_errs, tot_pos_errs)
+    xrot_delta = get_rot_err(t, m, d, traj_target[3:6], rot_errs, tot_rot_errs)
 
     # Compute full geometric Jacobian (6x6 for arm joints)
     jac = np.zeros((6, m.nv))
-    mujoco.mj_jacSite(m, d, jac[:3], jac[3:], sensor_site_2f85)
+    mujoco.mj_jacSite(m, d, jac[:3], jac[3:], get_site_id(m, "right_pad1_site"))
     jac_arm = jac[:, :6]
     
     # Task-space PD force
@@ -103,20 +146,23 @@ def main():
     pos_gains = { k:np.diag(v) for k, v in yml["pos"].items() } 
     rot_gains = { k:np.diag(v) for k, v in yml["rot"].items() } 
     hold = yml["hold"]
-    n = yml["n"]
+    # @DEPRECATED
+    # n = yml["n"]
 
     # ur3e  = 6  nq, 6  nv, 6 nu
     # 2f85  = 8  nq, 8  nv, 1 nu
     # total = 14 nq, 14 nv, 7 nu
     m, d = load_model(model_path)
 
-    gen_traj_l()
-    traj_target = build_interpolated_trajectory(n, hold, trajectory_fpath) if n else build_trajectory(hold, trajectory_fpath)
+    build_traj_l()
+    # @DEPRECATED
+    # traj_target = build_interpolated_trajectory(n, hold, trajectory_fpath) if n else load_trajectory(hold, trajectory_fpath)
+    traj_target = load_trajectory(hold, trajectory_fpath)
     # print(traj_target.shape)
     T = traj_target.shape[0]
     traj_true = np.zeros_like(traj_target)
 
-    jnt_ranges = m.jnt_range[:num_ur3e_joints] # NEEDED IN THIS CASE?
+    jnt_ranges = get_jnt_ranges(m) # NEEDED IN THIS CASE?
     pos_errs = np.zeros(shape=(T, 3))
     rot_errs = np.zeros(shape=(T, 3))
     grip_errs = np.zeros(shape=(T, 1)) # NEEDED?
@@ -127,8 +173,8 @@ def main():
     tot_rot_errs = np.zeros(shape=(3, ))
 
     viewer = mujoco.viewer.launch_passive(m, d)
-    viewer.opt.frame = mujoco.mjtFrame.mjFRAME_BODY
-    # viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
+    # viewer.opt.frame = mujoco.mjtFrame.mjFRAME_BODY
+    viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
             
     reset(m, d)
     save_flag = True

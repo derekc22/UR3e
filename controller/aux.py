@@ -37,7 +37,7 @@ def cleanup(traj_target: np.array,
 
 
 
-def load_trajectory_file(trajectory_fpath: str) -> np.array:
+def load_trajectory_file(trajectory_fpath: str) -> np.ndarray:
     return np.genfromtxt(
         trajectory_fpath, 
         delimiter=',', 
@@ -47,46 +47,46 @@ def load_trajectory_file(trajectory_fpath: str) -> np.array:
     
     
 
-
-def build_interpolated_trajectory(n: int, 
-                                  hold: int, 
-                                  trajectory_fpath: str) -> np.array:
+# @DEPRECATED
+# def build_interpolated_trajectory(n: int, 
+#                                   hold: int, 
+#                                   trajectory_fpath: str) -> np.ndarray:
     
-    traj = np.concatenate([
-        np.zeros(shape=(1, 7)),
-        load_trajectory_file(trajectory_fpath)
-    ], axis=0)
+#     traj = np.concatenate([
+#         # np.zeros(shape=(1, 7)),
+#         load_trajectory_file(trajectory_fpath)
+#     ], axis=0)
 
-    nrow = traj.shape[0]
+#     T = traj.shape[0]
 
-    # Interpolation factors: [1/(n+1), 2/(n+1), ..., n/(n+1)]
-    alphas = np.linspace(0, 1, n + 2)[1:-1]  # exclude 0 and 1
+#     # Interpolation factors: [1/(n+1), 2/(n+1), ..., n/(n+1)]
+#     alphas = np.linspace(0, 1, n + 2)[1:-1]  # exclude 0 and 1
 
-    # Temporary list to hold the final trajectory
-    result = []
+#     # Temporary list to store the final trajectory
+#     result = []
 
-    for i in range(nrow - 1):
-        start = traj[i]
-        end = traj[i + 1]
+#     for i in range(T - 1):
+#         start = traj[i]
+#         end = traj[i + 1]
 
-        # Append the start point 'hold' times
-        if i > 0: result.extend([start] * hold)
-        else: result.extend([start])
+#         # Append the start point 'hold' times
+#         if i > 0: result.extend([start] * hold)
+#         else: result.extend([start])
 
-        # Interpolated points between start and end (not held)
-        interpolated_rows = start + (end - start)[None, :] * alphas[:, None]
-        result.extend(interpolated_rows)
+#         # Interpolated points between start and end (not held)
+#         interpolated_rows = start + (end - start)[None, :] * alphas[:, None]
+#         result.extend(interpolated_rows)
 
-    # Append the last waypoint 'hold' times
-    result.extend([traj[-1]] * hold)
+#     # Append the last waypoint 'hold' times
+#     result.extend([traj[-1]] * hold)
 
-    return np.vstack(result)
-
-
+#     return np.vstack(result)
 
 
-def build_trajectory(hold: int, 
-                     trajectory_fpath: str) -> np.array:
+
+
+def load_trajectory(hold: int, 
+                     trajectory_fpath: str) -> np.ndarray:
     return np.repeat(
         load_trajectory_file(trajectory_fpath),
         hold, axis=0)
