@@ -116,7 +116,7 @@ class UR3eEnv(MujocoEnv):
             get_mug_xpos(self.model, self.data), action
         ])
 
-        u = ctrl(0, self.model, self.data, traj, 
+        u = pid_task_ctrl(0, self.model, self.data, traj, 
                  self.pos_gains, self.rot_gains, 
                  self.pos_errs, self.rot_errs, 
                  self.tot_pos_errs, self.tot_rot_errs

@@ -5,7 +5,7 @@ import matplotlib
 matplotlib.use('Agg')  # Set backend to non-interactive
 from controller.controller_utils import (
     get_joint_space_state,
-    pd_ctrl, grip_ctrl, update_errs)
+    pd_joint_ctrl, grip_ctrl, update_errs)
 from utils import (
     load_model, reset, 
     get_ur3e_qpos, get_joint_torques, 
@@ -25,7 +25,7 @@ def ctrl(t: int,
          qpos_gains: dict,
          qpos_errs: np.ndarray) -> np.ndarray:
     
-    qpos_u = pd_ctrl(t, m, d, traj_t[:-1], qpos_gains, get_qpos_err, qpos_errs)    
+    qpos_u = pd_joint_ctrl(t, m, d, traj_t[:-1], qpos_gains, get_joint_delta, qpos_errs)    
     grip_u = grip_ctrl(m, traj_t[-1])
     
     return np.hstack([
@@ -38,11 +38,11 @@ def ctrl(t: int,
 
 
 
-def get_qpos_err(t: int, 
-                 m: mujoco.MjModel, 
-                 d: mujoco.MjData, 
-                 qpos_target: np.ndarray,
-                 qpos_errs: np.ndarray) -> np.ndarray:
+def get_joint_delta(t: int, 
+                    m: mujoco.MjModel, 
+                    d: mujoco.MjData, 
+                    qpos_target: np.ndarray,
+                    qpos_errs: np.ndarray) -> np.ndarray:
     
     qpos_delta = qpos_target - get_ur3e_qpos(d)
     update_errs(t, qpos_errs, qpos_delta)

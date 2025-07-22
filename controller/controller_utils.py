@@ -6,19 +6,139 @@ from utils import *
 
 
 ################################################################################################################################################################################################################################################
-# ure3_2f85.xml
+# Task Space
 ################################################################################################################################################################################################################################################
 
 
-def pd_ctrl(t: int, 
-            m: mujoco.MjModel, 
-            d: mujoco.MjData, 
-            traj_target: np.ndarray, 
-            gains: dict, 
-            err_func: Callable,
-            errs: np.ndarray) -> np.ndarray:
+def get_pos_err(t: int, 
+                m: mujoco.MjModel, 
+                d: mujoco.MjData, 
+                xpos_target: np.ndarray,
+                pos_errs: np.ndarray) -> np.ndarray:
+
+    xpos_2f85 = get_site_xpos(m, d, "right_pad1_site")
+
+    # Position error
+    xpos_err = xpos_target - xpos_2f85
+    update_errs(t, pos_errs, xpos_err)
     
-    theta_delta = err_func(t, m, d, traj_target, errs)
+    # print(f"pos_target: {xpos_target}, pos_true: {xpos_2f85}, pos_err: {xpos_err}")
+    
+    return xpos_err
+
+
+
+# def get_rot_err(t: int, 
+#                 m: mujoco.MjModel, 
+#                 d: mujoco.MjData, 
+#                 xrot_target: np.ndarray,
+#                 rot_errs: np.ndarray,
+#                 tot_rot_errs: np.ndarray) -> np.ndarray:
+    
+#     xrot_2f85 = get_site_xmat(m, d, "right_pad1_site") 
+#     xrot_2f85 = xrot_2f85.reshape(3, 3)
+    
+#     # Quaternion approach
+#     # Convert current and target rotation matrices to quaternions
+#     q = R.from_matrix(xrot_2f85).as_quat()   # [x, y, z, w]
+#     q_d = R.from_rotvec(xrot_target).as_quat()
+#     # q_d = R.from_matrix(xrot_target).as_quat()
+#     # Compute the inverse of the current quaternion
+#     q_inv = R.from_quat(q).inv()
+#     # Compute the relative quaternion: q_err = q_d * q⁻¹
+#     q_err = R.from_quat(q_d) * q_inv
+#     # Convert to rotation vector (axis-angle)
+#     xrot_delta = q_err.as_rotvec()
+#     update_errs(t, rot_errs, xrot_delta)
+#     update_tot_errs(tot_rot_errs, xrot_delta)
+    
+#     return xrot_delta
+
+def get_rot_err(t: int, 
+                m: mujoco.MjModel, 
+                d: mujoco.MjData, 
+                xrot_target: np.ndarray,
+                rot_errs: np.ndarray) -> np.ndarray:
+    
+    # Quaternion approach
+    # Convert current and target rotation matrices to quaternions
+    q = get_site_R(m, d, "right_pad1_site")
+    q_d = R.from_rotvec(xrot_target)
+    # Compute the inverse of the current quaternion
+    q_inv = q.inv()
+    # Compute the relative quaternion: q_err = q_d * q⁻¹
+    q_err = q_d * q_inv
+    # Convert to rotation vector (axis-angle)
+    xrot_err = q_err.as_rotvec()
+    update_errs(t, rot_errs, xrot_err)
+    
+    return xrot_err
+    
+
+
+def pid_task_ctrl(t: int, 
+                  m: mujoco.MjModel, 
+                  d: mujoco.MjData, 
+                  traj_target: np.ndarray, 
+                  pos_gains: dict, 
+                  rot_gains: dict,pos_errs: 
+                  np.ndarray,rot_errs: 
+                  np.ndarray,tot_pos_errs: 
+                  np.ndarray,tot_rot_errs: 
+                  np.ndarray) -> np.ndarray:
+
+
+    xpos_err = get_pos_err(t, m, d, traj_target[:3], pos_errs)
+    xrot_err = get_rot_err(t, m, d, traj_target[3:6], rot_errs)
+    
+    update_tot_errs(tot_pos_errs, xpos_err)
+    update_tot_errs(tot_rot_errs, xrot_err)
+
+    # Compute full geometric Jacobian (6x6 for arm joints)
+    jac = np.zeros((6, m.nv))
+    mujoco.mj_jacSite(m, d, jac[:3], jac[3:], get_site_id(m, "right_pad1_site"))
+    jac_arm = jac[:, :6]
+    
+    # Task-space PD force
+    kp_pos, kd_pos, ki_pos = pos_gains.values()
+    kp_rot, kd_rot, ki_rot = rot_gains.values()
+    dt = m.opt.timestep
+    
+    # in task space (?)
+    u_pos = kp_pos @ xpos_err - kd_pos @ (jac_arm[:3] @ d.qvel[:6]) + ki_pos @ tot_pos_errs * dt
+    u_rot = kp_rot @ xrot_err - kd_rot @ (jac_arm[3:] @ d.qvel[:6]) + ki_rot @ tot_rot_errs * dt
+    u = np.hstack([u_pos, u_rot])
+    
+    # Compute joint torques (gravity compensation + task force)
+    # Convert from task space to joint space using inverse jacobian (?)
+    pos_rot_u = jac_arm.T @ u + d.qfrc_bias[:6]
+    grip_u = grip_ctrl(m, traj_target[-1])
+    
+    return np.hstack([
+        pos_rot_u, 
+        grip_u
+    ])
+
+
+
+
+
+################################################################################################################################################################################################################################################
+# Joint Space
+################################################################################################################################################################################################################################################
+
+
+
+
+def pd_joint_ctrl(t: int, 
+                  m: mujoco.MjModel, 
+                  d: mujoco.MjData, 
+                  traj_target: np.ndarray, 
+                  gains: dict, 
+                  joint_delta_func: Callable,
+                  errs: np.ndarray) -> np.ndarray:
+    
+    theta_delta = joint_delta_func(t, m, d, traj_target, errs)
     
     num_ur3e_joints = 6
     u = np.zeros((num_ur3e_joints, ))
