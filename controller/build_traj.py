@@ -15,7 +15,7 @@ def build_traj_l_point(trajectory_fpath: str,
 
     # Generate trajectory points
     num_points = 1000
-    t = np.linspace(0, 1, num_points)
+    t = np.linspace(0, 1, num_points+1)
     
     if stop is None:
         stop = np.hstack([
@@ -213,11 +213,11 @@ def build_traj_j(trajectory_fpath: str) -> None:
 
 
 def build_gripless_traj_mug(start: np.ndarray, 
-                     stop: np.ndarray) -> np.ndarray:
+                            stop: np.ndarray) -> np.ndarray:
 
     # Generate trajectory points
-    num_points = 1000
-    t = np.linspace(0, 1, num_points)
+    num_points = 100
+    t = np.linspace(0, 1, num_points+1)
     
     traj = np.vstack([start, stop])
             
@@ -240,8 +240,13 @@ def build_gripless_traj_mug(start: np.ndarray,
     ry = ry_interp(t[1:])
     rz = rz_interp(t[1:])
     
-    # print(x.shape)
-    # exit()
-    return np.vstack([
+    # return np.vstack([
+    #     x, y, z, rx, ry, rz   
+    # ]).T
+    
+    traj = np.vstack([
         x, y, z, rx, ry, rz   
     ]).T
+    return np.repeat(
+        traj,
+        5, axis=0)

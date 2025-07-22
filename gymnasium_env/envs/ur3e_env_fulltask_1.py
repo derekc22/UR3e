@@ -106,7 +106,7 @@ class UR3eEnv(MujocoEnv):
 
     def step(self, action):
         
-        u = ctrl(0, self.model, self.data, action, 
+        u = pid_task_ctrl(0, self.model, self.data, action, 
                  self.pos_gains, self.rot_gains, 
                  self.pos_errs, self.rot_errs, 
                  self.tot_pos_errs, self.tot_rot_errs

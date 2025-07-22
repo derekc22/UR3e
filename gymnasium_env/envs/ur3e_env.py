@@ -8,6 +8,7 @@ from gymnasium_env.gymnasium_env_utils import *
 from controller.move_l_task import *
 from controller.build_traj import build_gripless_traj_mug
 from controller.controller_utils import get_task_space_state
+import time
 from utils import *
 np.set_printoptions(
     linewidth=400,     # Wider output (default is 75)
@@ -16,7 +17,7 @@ np.set_printoptions(
     suppress=False     # Do not suppress small floating point numbers
 )
 
-render_fps = 50
+render_fps = 200
 
 class UR3eEnv(MujocoEnv):
 
@@ -55,6 +56,7 @@ class UR3eEnv(MujocoEnv):
 
         super().__init__(
             model_path=model_path,
+            # frame_skip=(1 if render_fps == 1000 else int((1/render_fps)/self.model.opt.timestep)),
             frame_skip=int((1/render_fps)/self.model.opt.timestep),
             observation_space=observation_space,
             # action_space=action_space,
@@ -84,16 +86,16 @@ class UR3eEnv(MujocoEnv):
 
         # PID gains (tune these as needed)
         self.pos_gains = {
-            'kp': np.diag([120, 120, 120]),
+            'kp': np.diag([520, 520, 520]),
             'kd': np.diag([20, 20, 20]),
-            # 'ki': np.diag([10, 10, 10])
-            'ki': np.diag([0, 0, 0])
+            'ki': np.diag([50, 50, 50])
+            # 'ki': np.diag([0, 0, 0])
         }
         self.rot_gains = {
             'kp': np.diag([35, 15, 15]),
             'kd': np.diag([2, 2, 2]),
-            # 'ki': np.diag([1, 1, 1])
-            'ki': np.diag([0, 0, 0])
+            'ki': np.diag([1, 1, 1])
+            # 'ki': np.diag([0, 0, 0])
         }
         # self.pos_gains = {
         #     'kp': np.diag([100, 100, 100]),
@@ -129,7 +131,7 @@ class UR3eEnv(MujocoEnv):
         traj_i = np.hstack([
             self.gripless_traj[self.t], action
         ])
-        u = ctrl(0, self.model, self.data, traj_i, 
+        u = pid_task_ctrl(0, self.model, self.data, traj_i, 
                  self.pos_gains, self.rot_gains, 
                  self.pos_errs, self.rot_errs, 
                  self.tot_pos_errs, self.tot_rot_errs
@@ -159,13 +161,12 @@ class UR3eEnv(MujocoEnv):
             reward = -10.0  # or another strong penalty
             terminated = True
             info['termination_reason'] = 'self_collision'
-            print("Collision Detected")
             return observation, reward, terminated, truncated, info
 
 
         if self.render_mode == "human":
             self.render()  # Ensure GUI updates
-
+        
         return observation, reward, terminated, truncated, info
 
 
@@ -180,6 +181,9 @@ class UR3eEnv(MujocoEnv):
         self.gripless_traj = build_gripless_traj_mug(
             get_task_space_state(self.model, self.data)[:-1], stop
         )
+        # print(get_mug_xpos(self.model, self.data))
+        # print(self.gripless_traj[-1, :])
+        # exit()
         self.t = 0
         self.tot_pos_errs = np.zeros(3)
         self.tot_rot_errs = np.zeros(3)
@@ -271,7 +275,7 @@ class UR3eEnv(MujocoEnv):
         place_threshold = 0.05
 
         # Base dense rewards
-        r_grasp_dense = -0.1 * d_pick        # Encourage proximity to mug
+        r_grasp_dense = -0.5 * d_pick        # Encourage proximity to mug
         # r_grasp_dense = 1/d_pick        # Encourage proximity to mug
         r_place_dense = -0.5 * d_place        # Stronger encouragement for placing
 
@@ -330,14 +334,16 @@ class UR3eEnv(MujocoEnv):
         d_pick = np.linalg.norm(gripper_pos - mug_pos)
         d_place = np.linalg.norm(mug_pos - ghost_pos)
         grasped = np.any(force > contact_threshold)
+        
+        # print(d_pick, pick_threshold)
 
         # success if grasped and within threshold
         # if grasped and (d_place < place_threshold):
-        if d_place < place_threshold or not (pick_threshold < d_pick < max_arm_reach):
+        if d_place < place_threshold or (d_pick < pick_threshold) or (max_arm_reach < d_pick):
             return True
 
         return False
     
 
     def _check_truncation(self):
-        return False
+        return self.t >= self.gripless_traj.shape[0]

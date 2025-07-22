@@ -121,7 +121,7 @@ def get_robot_collision(m: mujoco.MjModel,
         # if ((b1 in arm_bodies and b2 in arm_bodies) or
         #     (b1 in arm_bodies and b2 == table_body) or
         #     (b2 in arm_bodies and b1 == table_body)):
-            print(get_body_name(m, b1), get_body_name(m, b2))
+            print("collision detected: ", get_body_name(m, b1), get_body_name(m, b2))
             return 1
             # exit()
     return 0

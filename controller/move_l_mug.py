@@ -4,15 +4,11 @@ import matplotlib
 np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 matplotlib.use('Agg')  # Set backend to non-interactive
 from controller.controller_utils import (
-    get_task_space_state,
-    grip_ctrl, update_errs, update_tot_errs
+    get_task_space_state, pid_task_ctrl
 )
 from utils import (
-    load_model, reset, get_site_id,
-    get_site_xpos, get_site_R, get_joint_torques,
-    get_jnt_ranges
+    load_model, get_joint_torques,
 )
-from controller.move_l_task import ctrl
 from controller.build_traj import build_traj_l_point
 from controller.aux import load_trajectory, plot_plots, get_dtn
 from gymnasium_env.gymnasium_env_utils import (
@@ -76,7 +72,7 @@ def main():
                 tot_pos_errs.fill(0)
                 tot_rot_errs.fill(0)
             
-            u = ctrl(t, m, d, traj_target[t, :], pos_gains, rot_gains, pos_errs, rot_errs, tot_pos_errs, tot_rot_errs)
+            u = pid_task_ctrl(t, m, d, traj_target[t, :], pos_gains, rot_gains, pos_errs, rot_errs, tot_pos_errs, tot_rot_errs)
             d.ctrl = u
             ctrls[t] = u
             
@@ -91,7 +87,7 @@ def main():
             
             print(get_robot_collision(m, d, cc))
             
-        time.sleep(0.1)
+        time.sleep(1)
         # plot_plots(traj_target, traj_true, ctrls, actuator_frc, ctrl_mode, log_fpath=log_fpath, pos_errs=pos_errs, rot_errs=rot_errs)
         r += 1
             
