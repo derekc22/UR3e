@@ -56,6 +56,7 @@ def plot_trajectory_l(traj_target, traj_true, pos_errs, rot_errs, save_fpath):
     plt.suptitle(title)
     plt.tight_layout()    
     plt.savefig(f"{save_fpath}/plot.jpg")
+    plt.close()
             
     
 def plot_3d_trajectory(traj_target, traj_true, pos_errs, save_fpath):
@@ -88,6 +89,7 @@ def plot_3d_trajectory(traj_target, traj_true, pos_errs, save_fpath):
     plt.tight_layout()    
     plt.savefig(f"{save_fpath}/plot3d.jpg")
     with open(f"{save_fpath}/plot3d_pkl.pkl", "wb") as f: pickle.dump(fig, f)
+    plt.close()
 
 
 
@@ -118,7 +120,8 @@ def plot_2d_trajectory(traj_target, traj_true, pos_errs, save_fpath):
     plt.suptitle(title)
     plt.tight_layout()    
     plt.savefig(f"{save_fpath}/plot2d.jpg")
-    
+    plt.close()
+
 
 
 
@@ -157,7 +160,8 @@ def plot_trajectory_j(traj_target, traj_true, qpos_errs, save_fpath):
     plt.suptitle(title)
     plt.tight_layout()    
     plt.savefig(f"{save_fpath}/plot.jpg")
-    
+    plt.close()
+
 
 
 def plot_ctrl(ctrls, actuator_frc, save_fpath):
@@ -181,4 +185,4 @@ def plot_ctrl(ctrls, actuator_frc, save_fpath):
     axes[8].set_visible(False)
     plt.tight_layout()    
     plt.savefig(f"{save_fpath}/ctrl.jpg")
-    
+    plt.close()

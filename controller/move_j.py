@@ -3,21 +3,14 @@ import numpy as np
 np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 import matplotlib
 matplotlib.use('Agg')  # Set backend to non-interactive
-from controller.controller_utils import (
-    get_joint_space_state,
-    pd_joint_ctrl, grip_ctrl, update_errs)
-from utils import (
-    load_model, reset, 
-    get_ur3e_qpos, get_joint_torques, 
-)
+from controller.controller_utils import get_joint_space_state, pd_joint_ctrl, grip_ctrl, update_errs
+from utils import load_model, reset, get_ur3e_qpos, get_joint_torques
 from controller.build_traj import build_traj_j
 from controller.aux import load_trajectory, cleanup
 import yaml
 
 
     
-
-
 def ctrl(t: int, 
          m: mujoco.MjModel, 
          d: mujoco.MjData,
@@ -34,10 +27,6 @@ def ctrl(t: int,
     ])
     
 
-
-
-
-
 def get_joint_delta(t: int, 
                     m: mujoco.MjModel, 
                     d: mujoco.MjData, 
@@ -48,13 +37,6 @@ def get_joint_delta(t: int,
     update_errs(t, qpos_errs, qpos_delta)
     return qpos_delta
     
-
-
-
-
-
-
-
 
 
 def main():
@@ -68,18 +50,15 @@ def main():
     with open(config_fpath, "r") as f: yml = yaml.safe_load(f)
     qpos_gains = { k:np.diag(v) for k, v in yml["qpos"].items() } 
     hold = yml["hold"]
-    # @DEPRECATED
-    # n = yml["n"]
 
     # ur3e  = 6  nq, 6  nv, 6 nu
     # 2f85  = 8  nq, 8  nv, 1 nu
     # total = 14 nq, 14 nv, 7 nu
     m, d = load_model(model_path)
+    reset(m, d)
 
-    build_traj_j(trajectory_fpath)
-    # @DEPRECATED
-    # traj_target = build_interpolated_trajectory(n, hold, trajectory_fpath) if n else load_trajectory(hold, trajectory_fpath)
-    traj_target = load_trajectory(hold, trajectory_fpath)
+    build_traj_j(get_joint_space_state(d), hold, trajectory_fpath)
+    traj_target = load_trajectory(trajectory_fpath)
     T = traj_target.shape[0]
     traj_true = np.zeros_like(traj_target)
 
@@ -91,7 +70,6 @@ def main():
     # viewer.opt.frame = mujoco.mjtFrame.mjFRAME_BODY
     viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
             
-    reset(m, d)
     save_flag = True
 
     try:
@@ -106,15 +84,11 @@ def main():
             
             traj_true[t] = get_joint_space_state(d)
             actuator_frc[t] = get_joint_torques(d)
-            
-            # print(ctrls[:3, :] - actuator_frc[:3, :])
 
             # print(f"qpos_target: {traj_target[t, :7]}, pos_true: {traj_true[t, :7]}, pos_err: {qpos_errs[t, :]}")
             # print(f"grip_target: {traj_target[t, -1]}")
             # print("----------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
             
-            # time.sleep(0.01)
-
     except KeyboardInterrupt:
         pass
     except Exception as e:

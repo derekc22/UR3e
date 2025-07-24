@@ -3,24 +3,14 @@ import numpy as np
 import matplotlib
 np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 matplotlib.use('Agg')  # Set backend to non-interactive
-from controller.controller_utils import (
-    get_task_space_state,
-    pd_joint_ctrl, grip_ctrl, update_errs, 
-    get_pos_err, get_rot_err
-)
-from utils import (
-    load_model, reset, get_site_id,
-    get_joint_torques
-)
+from controller.controller_utils import get_task_space_state, pd_joint_ctrl, grip_ctrl, get_pos_err, get_rot_err
+from utils import load_model, reset, get_site_id, get_joint_torques
 from controller.build_traj import build_traj_l
 from controller.aux import load_trajectory, cleanup
 import yaml
 from scipy.spatial.transform import Rotation as R
 
     
-
-
-
 
 def ctrl(t: int,
          m: mujoco.MjModel, 
@@ -37,11 +27,8 @@ def ctrl(t: int,
     
     return np.hstack([
         pos_u + rot_u,
-        # rot_u, 
         grip_u
     ])
-
-
 
 
 def get_pos_joint_delta(t: int, 
@@ -57,7 +44,7 @@ def get_pos_joint_delta(t: int,
 
     # Compute full Jacobian and extract columns for arm joints
     jacp = np.zeros((3, m.nv))
-    mujoco.mj_jacSite(m, d, jacp, None, get_site_id(m, "right_pad1_site"))
+    mujoco.mj_jacSite(m, d, jacp, None, get_site_id(m, "tcp"))
     jacp_arm = jacp[:, ur3e_joint_indices]  # Extract relevant columns (3x6)
 
     jacp_pinv = np.linalg.pinv(jacp_arm)
@@ -65,8 +52,6 @@ def get_pos_joint_delta(t: int,
     # Compute joint angle updates
     theta_delta = jacp_pinv @ xpos_err
     return theta_delta
-    
-    
     
 
 def get_rot_joint_delta(t: int, 
@@ -82,7 +67,7 @@ def get_rot_joint_delta(t: int,
 
     # Compute full Jacobian and extract columns for arm joints
     jacr = np.zeros((3, m.nv))
-    mujoco.mj_jacSite(m, d, None, jacr, get_site_id(m, "right_pad1_site"))
+    mujoco.mj_jacSite(m, d, None, jacr, get_site_id(m, "tcp"))
     jacr_arm = jacr[:, ur3e_joint_indices]  # Extract relevant columns (3x6)
 
     jacr_pinv = np.linalg.pinv(jacr_arm)
@@ -117,9 +102,10 @@ def main():
     # 2f85  = 8  nq, 8  nv, 1 nu
     # total = 14 nq, 14 nv, 7 nu
     m, d = load_model(model_path)
+    reset(m, d)
 
-    build_traj_l(trajectory_fpath)
-    traj_target = load_trajectory(hold, trajectory_fpath)
+    build_traj_l(get_task_space_state(m, d), hold, trajectory_fpath)
+    traj_target = load_trajectory(trajectory_fpath)
     T = traj_target.shape[0]
     traj_true = np.zeros_like(traj_target)
 
@@ -133,7 +119,6 @@ def main():
     viewer.opt.frame = mujoco.mjtFrame.mjFRAME_BODY
     # viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
             
-    reset(m, d)
     save_flag = True
 
     try:
@@ -153,8 +138,6 @@ def main():
             # print(f"rot_target: {traj_target[t, 3:6]}, rot_true: {traj_true[t, 3:6]}, rot_err: {rot_errs[t, :]}")
             # print(f"grip_target: {traj_target[t, -1]}")
             # print("------------------------------------------------------------------------------------------")
-            
-            # time.sleep(0.01)
 
     except KeyboardInterrupt:
         pass

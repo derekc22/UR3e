@@ -165,18 +165,31 @@ def get_joint_torques(d):
 #     return np.array([ d.sensor(pad).data[0] for pad in contact_pads ])
 
 
-def get_binary_grasp_contact(d: mujoco.MjData) -> int:
-    return 1 if get_grasp_contact(d) else 0
+# @DEPRECATED
+# def get_boolean_grasp_contact_single(d: mujoco.MjData) -> bool:
+#     contact_threshold = 0.1
+#     return get_grasp_contact(d) > contact_threshold
 
 
-def get_grasp_contact(d: mujoco.MjData) -> int:
-    # binary [0, oscillates between 6.29 to 12.75 for some reason] = [no contact, contact]
-    return d.sensor("left_pad1_contact").data[0]
+# @DEPRECATED
+# def get_grasp_contact_single(d: mujoco.MjData) -> float:
+#     # boolean [0, oscillates between 6.29 to 12.75 for some reason] = [no contact, contact]
+#     return d.sensor("left_pad1_contact").data[0]
 
 
-def get_finger_torque(d: mujoco.MjData) -> np.ndarray: 
-    # continuous (-0.28418, 1.3) = (no contact, full contact)
-    return d.sensor("fingers_actuatorfrc").data
+def get_boolean_grasp_contact(d: mujoco.MjData) -> bool:
+    contact_threshold = 0.1
+    return get_grasp_contact(d) > (contact_threshold, contact_threshold)
+
+
+def get_grasp_contact(d: mujoco.MjData) -> tuple[float, float]:
+    # boolean [0, oscillates between 6.29 to 12.75 for some reason] = [no contact, contact]
+    return (d.sensor("left_pad1_contact").data[0], d.sensor("right_pad1_contact").data[0])
+
+# @DEPRECATED
+# def get_finger_torque(d: mujoco.MjData) -> np.ndarray: 
+#     # continuous (-0.28418, 1.3) = (no contact, full contact)
+#     return d.sensor("fingers_actuatorfrc").data
 
 
 def get_jnt_range(m: mujoco.MjModel,
@@ -229,4 +242,4 @@ def get_robot_qvel(d: mujoco.MjData) -> np.ndarray:
 
 def get_2f85_xpos(m: mujoco.MjModel,
                   d: mujoco.MjData) -> np.ndarray:
-    return get_site_xpos(m, d, "right_pad1_site")
+    return get_site_xpos(m, d, "tcp")
