@@ -10,7 +10,7 @@ np.set_printoptions(
     precision=8,       # Show more decimal places
     suppress=False     # Do not suppress small floating point numbers
 )
-
+import os
 
 
 
@@ -63,7 +63,13 @@ def main():
         viewer.sync()
         t = time.time() -  start
 
-        get_robot_collision(m, d, collision_cache)
+        # print(get_self_collision(m, d, collision_cache))
+        # print(get_table_collision(m, d, collision_cache))
+        # print(get_boolean_grasp_contact(d))
+        # print(get_grasp_contact(d))
+        # print(get_block_grasp(m, d))
+
+        # get_table_collision(m, d, collision_cache)
         
         # print(get_children_deep(m, id_))
         # print(get_children_deep(m, get_body_id(m, "robot_base")))

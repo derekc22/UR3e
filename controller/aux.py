@@ -55,12 +55,12 @@ def cleanup(traj_target: np.ndarray,
     shutil.copy(trajectory_fpath, save_fpath)
 
 
-
-def load_trajectory_file(trajectory_fpath: str) -> np.ndarray:
-    return np.genfromtxt(
-        trajectory_fpath, 
-        delimiter=',', 
-        skip_header=1).reshape(-1, 7)
+# @DEPRECATED
+# def load_trajectory_file(trajectory_fpath: str) -> np.ndarray:
+#     return np.genfromtxt(
+#         trajectory_fpath, 
+#         delimiter=',', 
+#         skip_header=1).reshape(-1, 7)
 
         
     
@@ -104,8 +104,9 @@ def load_trajectory_file(trajectory_fpath: str) -> np.ndarray:
 
 
 
-def load_trajectory(hold: int, 
-                     trajectory_fpath: str) -> np.ndarray:
-    return np.repeat(
-        load_trajectory_file(trajectory_fpath),
-        hold, axis=0)
+def load_trajectory(trajectory_fpath: str) -> np.ndarray:
+    return np.genfromtxt(
+            trajectory_fpath, 
+            delimiter=',', 
+            skip_header=1
+    ).reshape(-1, 7)

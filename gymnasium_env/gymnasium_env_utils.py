@@ -25,27 +25,31 @@ def get_mug_xpos(m: mujoco.MjModel,
     return get_site_xpos(m, d, "handle_site")
 
 
-def get_stochastic_init(m: mujoco.MjModel, 
-                        keyframe: str = 'home') -> tuple:
+def get_init(m: mujoco.MjModel, 
+             mode: str,
+             keyframe: str = 'home') -> tuple[np.ndarray, np.ndarray]:
     init_qpos = m.keyframe(keyframe).qpos
     init_qvel = m.keyframe(keyframe).qvel
     
-    noise = np.hstack([
-        np.zeros(m.nq-7),
-        np.random.uniform(low=-0.1, high=0.0, size=2),
-        np.zeros(5),
-    ])    
+    if mode == "stochastic":
+        noise = np.hstack([
+            np.zeros(m.nq-7),
+            np.random.uniform(low=-0.1, high=0.0, size=2),
+            np.zeros(5),
+        ])    
+        return (init_qpos + noise, init_qvel)
     
-    return (init_qpos + noise, init_qvel)
+    return (init_qpos, init_qvel)
 
 
-def reset_mug_stochastic(m: mujoco.MjModel, 
-                         d: mujoco.MjData, 
-                         keyframe: str = 'home') -> None:
-    """Reset mug position stochastically"""
-    init_qpos_noisy, init_qvel = get_stochastic_init(m, keyframe=keyframe)
+def reset_with_mug(m: mujoco.MjModel, 
+              d: mujoco.MjData, 
+              mode: str,
+              keyframe: str = 'home') -> None:
+
+    init_qpos, init_qvel = get_init(m, mode=mode, keyframe=keyframe)    
     mujoco.mj_resetData(m, d) 
-    d.qpos = init_qpos_noisy
+    d.qpos = init_qpos
     d.qvel = init_qvel
     mujoco.mj_step(m, d)
 
@@ -56,7 +60,7 @@ def reset_mug_stochastic(m: mujoco.MjModel,
 
 # def init_collision_cache(m: mujoco.MjModel) -> tuple:
 #     # ---------- names you may need to update when renaming ------------
-#     finger_names = {
+#     gripper_names = {
 #         # "left_driver", "right_driver",
 #         # "left_spring_link", "right_spring_link",
 #         # "left_follower", "right_follower",
@@ -69,40 +73,86 @@ def reset_mug_stochastic(m: mujoco.MjModel,
 #         "robot_base", #"shoulder_link", #"upper_arm_link",
 #         "forearm_link", "wrist_1_link", "wrist_2_link",
 #         "wrist_3_link", "gripper_base",
-#         *finger_names,
+#         *gripper_names,
 #     }
 #     # ---------- convert body names to integer body‑ids -----------------
-#     finger_bodies = { get_body_id(m, finger) for finger in finger_names }
+#     gripper_bodies = { get_body_id(m, gripper) for gripper in gripper_names }
 #     arm_bodies = { get_body_id(m, arm) for arm in arm_names }
 #     table_body = get_body_id(m, "table")
     
-#     return (finger_bodies, arm_bodies, table_body)
+#     return (gripper_bodies, arm_bodies, table_body)
 
 
-
-def init_collision_cache(m: mujoco.MjModel) -> tuple:
-
-    finger_root_id = get_body_id(m, "robotiq_base_mount")
-    arm_root_id = get_body_id(m, "robot_base")
+# def get_block_grasp(m: mujoco.MjModel,
+#                     d: mujoco.MjData) -> int:
     
-    finger_bodies = { finger_root_id, *get_children_deep(m, finger_root_id) }
+#     one_finger_grip = False
+    
+#     for k in range(d.ncon):
+#         c = d.contact[k]
+#         b1 = m.geom_bodyid[c.geom1]
+#         b2 = m.geom_bodyid[c.geom2]
+        
+#         if ((b1 in ("left_pad1_contact", "right_pad1_contact") and b2 == "fish" or 
+#             b2 in ("left_pad1_contact", "right_pad1_contact") and b1 == "fish") and
+#             not one_finger_grip):
+#             one_finger_grip = True
+#         elif ((b1 in ("left_pad1_contact", "right_pad1_contact") and b2 == "fish" or 
+#               b2 in ("left_pad1_contact", "right_pad1_contact") and b1 == "fish") and
+#               one_finger_grip):
+#             return 1
+#     return 0
+
+
+def get_block_grasp(m: mujoco.MjModel, 
+                    d: mujoco.MjData) -> int:
+    
+    contact_pads = set()
+    left_pad_id = get_body_id(m, "left_pad")
+    right_pad_id = get_body_id(m, "right_pad")
+    fish_id = get_body_id(m, "fish")
+    
+    for k in range(d.ncon):
+        c = d.contact[k]
+        b1 = m.geom_bodyid[c.geom1]
+        b2 = m.geom_bodyid[c.geom2]
+        
+        for pad in (left_pad_id, right_pad_id):
+            # print(get_body_name(m, b1))
+            # print(get_body_name(m, b2))
+            if (pad in (b1, b2)) and (fish_id in (b1, b2)):
+                contact_pads.add(pad)
+                
+    # return int(len(contact_pads) == 2)
+    return len(contact_pads)
+
+    
+
+
+def init_collision_cache(m: mujoco.MjModel) -> tuple[set, set, int]:
+
+    gripper_root_id = get_body_id(m, "robotiq_base_mount")
+    gripper_bodies = { gripper_root_id, *get_children_deep(m, gripper_root_id) }
+    
+    arm_root_id = get_body_id(m, "robot_base")
     arm_bodies = { arm_root_id, *get_children_deep(m, arm_root_id) }
+    
     table_body = get_body_id(m, "table")
     
-    return (finger_bodies, arm_bodies, table_body)
+    return (gripper_bodies, arm_bodies, table_body)
 
 
-def get_robot_collision(m: mujoco.MjModel,
-                        d: mujoco.MjData,
-                        collision_cache: tuple) -> int:
+def get_self_collision(m: mujoco.MjModel,
+                       d: mujoco.MjData,
+                       collision_cache: tuple[set, set, int]) -> int:
     """
-    Return 1 if any arm or gripper body (excluding finger‑to‑finger pairs)
+    Return 1 if any arm or gripper body (excluding gripper‑to‑gripper pairs)
     touches the table or another arm/gripper body.  Otherwise return 0.
-    Finger‑to‑finger contacts are ignored so that other routines can still
+    gripper‑to‑gripper contacts are ignored so that other routines can still
     inspect them.
     """
 
-    finger_bodies, arm_bodies, table_body = collision_cache
+    gripper_bodies, arm_bodies, _ = collision_cache
 
     # ------------------------------------------------------------
     # Inspect active contacts
@@ -112,30 +162,87 @@ def get_robot_collision(m: mujoco.MjModel,
         b1 = m.geom_bodyid[c.geom1]
         b2 = m.geom_bodyid[c.geom2]
 
-        # ignore pure finger–finger contact
-        if b1 in finger_bodies and b2 in finger_bodies:
-            continue
-
-        # detect arm–arm or arm–table contact
+        # detect arm–arm contact
         if (b1 in arm_bodies and b2 in arm_bodies):
-        # if ((b1 in arm_bodies and b2 in arm_bodies) or
-        #     (b1 in arm_bodies and b2 == table_body) or
-        #     (b2 in arm_bodies and b1 == table_body)):
-            print("collision detected: ", get_body_name(m, b1), get_body_name(m, b2))
+            # ignore pure gripper–gripper contact
+            if b1 in gripper_bodies and b2 in gripper_bodies:
+                continue
             return 1
-            # exit()
     return 0
+
+def get_table_collision(m: mujoco.MjModel,
+                        d: mujoco.MjData,
+                        collision_cache: tuple[set, set, int]) -> int:
+    """
+    Return 1 if any arm or gripper body (excluding gripper‑to‑gripper pairs)
+    touches the table or another arm/gripper body.  Otherwise return 0.
+    gripper‑to‑gripper contacts are ignored so that other routines can still
+    inspect them.
+    """
+
+    gripper_bodies, _, table_body = collision_cache
+
+    # ------------------------------------------------------------
+    # Inspect active contacts
+    # ------------------------------------------------------------
+    for k in range(d.ncon):
+        c = d.contact[k]
+        b1 = m.geom_bodyid[c.geom1]
+        b2 = m.geom_bodyid[c.geom2]
+
+        # ignore pure gripper–gripper contact
+        # if b1 in gripper_bodies and b2 in gripper_bodies:
+            # continue
+
+        # detect gripper–table contact
+        if (b1 in gripper_bodies and b2 == table_body) or (b2 in gripper_bodies and b1 == table_body):
+            return 1
+    return 0
+
+#@working
+# def get_robot_collision(m: mujoco.MjModel,
+#                         d: mujoco.MjData,
+#                         collision_cache: tuple[set, set, int]) -> int:
+#     """
+#     Return 1 if any arm or gripper body (excluding gripper‑to‑gripper pairs)
+#     touches the table or another arm/gripper body.  Otherwise return 0.
+#     gripper‑to‑gripper contacts are ignored so that other routines can still
+#     inspect them.
+#     """
+
+#     gripper_bodies, arm_bodies, table_body = collision_cache
+
+#     # ------------------------------------------------------------
+#     # Inspect active contacts
+#     # ------------------------------------------------------------
+#     for k in range(d.ncon):
+#         c = d.contact[k]
+#         b1 = m.geom_bodyid[c.geom1]
+#         b2 = m.geom_bodyid[c.geom2]
+
+#         # ignore pure gripper–gripper contact
+#         if b1 in gripper_bodies and b2 in gripper_bodies:
+#             continue
+
+#         # detect arm–arm or arm–table contact
+#         if (b1 in arm_bodies and b2 in arm_bodies):
+#         # if ((b1 in arm_bodies and b2 in arm_bodies) or
+#         #     (b1 in arm_bodies and b2 == table_body) or
+#         #     (b2 in arm_bodies and b1 == table_body)):
+#             print("collision detected: ", get_body_name(m, b1), get_body_name(m, b2))
+#             return 1
+#             # exit()
+#     return 0
 
 
 
 # collision_cache = {}
-
 # def arm_collision(model: mujoco.MjModel,
 #                   data: mujoco.MjData) -> int:
 #     """
-#     Return 1 if any arm or gripper body (excluding finger‑to‑finger pairs)
+#     Return 1 if any arm or gripper body (excluding gripper‑to‑gripper pairs)
 #     touches the table or another arm/gripper body.  Otherwise return 0.
-#     Finger‑to‑finger contacts are ignored so that other routines can still
+#     gripper‑to‑gripper contacts are ignored so that other routines can still
 #     inspect them.
 #     """
 #     # ------------------------------------------------------------
@@ -144,7 +251,7 @@ def get_robot_collision(m: mujoco.MjModel,
 #     cache_entry = collision_cache.get(id(model))
 #     if cache_entry is None:
 #         # ---------- names you may need to update when renaming ------------
-#         finger_names = {
+#         gripper_names = {
 #             "left_driver", "right_driver",
 #             "left_spring_link", "right_spring_link",
 #             "left_follower", "right_follower",
@@ -157,12 +264,12 @@ def get_robot_collision(m: mujoco.MjModel,
 #             "robot_base", "shoulder_link", "upper_arm_link",
 #             "forearm_link", "wrist_1_link", "wrist_2_link",
 #             "wrist_3_link", "gripper_base",
-#             *finger_names,
+#             *gripper_names,
 #         }
 #         # ---------- convert body names to integer body‑ids -----------------
-#         finger_bodies = {
+#         gripper_bodies = {
 #             mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, n)
-#             for n in finger_names
+#             for n in gripper_names
 #             # if mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, n) != -1
 #         }
 #         arm_bodies = {
@@ -173,10 +280,10 @@ def get_robot_collision(m: mujoco.MjModel,
 #         table_body = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "table")
 #         if table_body == -1:
 #             raise ValueError("Body named 'table' not found in model.")
-#         cache_entry = (finger_bodies, arm_bodies, table_body)
+#         cache_entry = (gripper_bodies, arm_bodies, table_body)
 #         collision_cache[id(model)] = cache_entry
 
-#     finger_bodies, arm_bodies, table_body = cache_entry
+#     gripper_bodies, arm_bodies, table_body = cache_entry
 
 #     # ------------------------------------------------------------
 #     # Inspect active contacts
@@ -186,8 +293,8 @@ def get_robot_collision(m: mujoco.MjModel,
 #         b1 = model.geom_bodyid[c.geom1]
 #         b2 = model.geom_bodyid[c.geom2]
 
-#         # ignore pure finger–finger contact
-#         if b1 in finger_bodies and b2 in finger_bodies:
+#         # ignore pure gripper–gripper contact
+#         if b1 in gripper_bodies and b2 in gripper_bodies:
 #             continue
 
 #         # detect arm–arm or arm–table contact

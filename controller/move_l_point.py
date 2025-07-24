@@ -3,19 +3,12 @@ import numpy as np
 import matplotlib
 np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 matplotlib.use('Agg')  # Set backend to non-interactive
-from controller.controller_utils import (
-    get_task_space_state, pid_task_ctrl
-)
-from utils import (
-    load_model, reset,
-    get_joint_torques, get_jnt_ranges
-)
+from controller.controller_utils import get_task_space_state, pid_task_ctrl
+from utils import load_model, reset, get_joint_torques, get_jnt_ranges
 from controller.build_traj import build_traj_l_point
 from controller.aux import load_trajectory, cleanup
 import yaml
-from scipy.spatial.transform import Rotation as R
 import time
-
 
 
 def main():
@@ -35,11 +28,10 @@ def main():
     # 2f85  = 8  nq, 8  nv, 1 nu
     # total = 14 nq, 14 nv, 7 nu
     m, d = load_model(model_path)
+    reset(m, d)
     
-    mujoco.mj_step(m, d) # step the simulation to initialize it
-    print(get_task_space_state(m, d))
-    build_traj_l_point(trajectory_fpath, get_task_space_state(m, d))
-    traj_target = load_trajectory(hold, trajectory_fpath)
+    build_traj_l_point(get_task_space_state(m, d), hold, trajectory_fpath)
+    traj_target = load_trajectory(trajectory_fpath)
     T = traj_target.shape[0]
     traj_true = np.zeros_like(traj_target)
 
@@ -57,7 +49,6 @@ def main():
     # viewer.opt.frame = mujoco.mjtFrame.mjFRAME_BODY
     viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
             
-    reset(m, d)
     save_flag = True
     
     try:
@@ -65,7 +56,6 @@ def main():
             viewer.sync()
             
             if t % hold == 0: 
-                # print(t)
                 tot_pos_errs.fill(0)
                 tot_rot_errs.fill(0)
             
@@ -77,8 +67,6 @@ def main():
             
             traj_true[t] = get_task_space_state(m, d)
             actuator_frc[t] = get_joint_torques(d)
-            
-            # print(ctrls[:3, :] - actuator_frc[:3, :])
             
             # print(f"pos_target: {traj_target[t, :3]}, pos_true: {traj_true[t, :3]}, pos_err: {pos_errs[t, :]}")
             # print(f"rot_target: {traj_target[t, 3:6]}, rot_true: {traj_true[t, 3:6]}, rot_err: {rot_errs[t, :]}")

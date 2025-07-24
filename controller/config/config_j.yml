@@ -1,16 +1,16 @@
-hold: 320
+hold: 120
 qpos:
   kp: 
     - 20.0 # Shoulder Pan
-    - 60.0 # Shoulder Lift
-    - 20.0 # Elbow
+    - 380.0 # Shoulder Lift
+    - 300.0 # Elbow
     - 20.0 # Wrist 1
-    - 20.0 # Wrist 2
+    - 30.0 # Wrist 2
     - 10.0 # Wrist 3
 
   kd: 
     - 5.00 # Shoulder Pan
-    - 15.0 # Shoulder Lift
+    - 5.00 # Shoulder Lift
     - 5.00 # Elbow
     - 5.00 # Wrist 1
     - 5.00 # Wrist 2
