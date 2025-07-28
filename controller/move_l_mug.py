@@ -4,8 +4,8 @@ import matplotlib
 np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 matplotlib.use('Agg')  # Set backend to non-interactive
 from controller.controller_utils import get_task_space_state, pid_task_ctrl
-from utils import load_model, get_joint_torques
-from controller.build_traj import build_traj_l_pick_and_place
+from utils import *
+from controller.build_traj import build_traj_l_pick_move_place, build_traj_l_pick_place
 from controller.aux import load_trajectory, cleanup
 from gymnasium_env.gymnasium_env_utils import *
 from utils import load_model, get_joint_torques, get_jnt_ranges
@@ -31,12 +31,20 @@ def main():
     # mug   = 7  nq, 6  nv, 0 nu
     # total = 21 nq, 20 nv, 7 nu        
     m, d = load_model(model_path)
-    reset_with_mug(m, d, mode="deterministic")
+    reset_with_mug(m, d, mode="deterministic", keyframe="down")
 
-    pick = np.hstack([get_mug_xpos(m, d), [0, 0, 0], 1])
-    place = np.hstack([get_ghost_xpos(m, d), [0, 0, 0], 1])
-    build_traj_l_pick_and_place(get_task_space_state(m, d), [pick, place], hold, trajectory_fpath)
+    init_r = get_site_xrotvec(m, d, "tcp")
+    print(init_r)
+    pick = np.hstack([get_mug_xpos(m, d), init_r, 0.5])
+    place = np.hstack([get_ghost_xpos(m, d), init_r, 1])
+    # place = np.hstack([ place[:2], place[2] + get_body_size(m, "ghost")[-1]/2, place[3:] ])
+    
+    # build_traj_l_pick_move_place(get_task_space_state(m, d), [pick, place], hold, trajectory_fpath)
+    # traj_target = load_trajectory(trajectory_fpath)
+
+    build_traj_l_pick_place(get_task_space_state(m, d), [pick, place], hold, trajectory_fpath)
     traj_target = load_trajectory(trajectory_fpath)
+    
     T = traj_target.shape[0]
     traj_true = np.zeros_like(traj_target)
     
@@ -79,7 +87,7 @@ def main():
             # print(f"grip_target: {traj_target[t, -1]}")
             # print("------------------------------------------------------------------------------------------")
 
-            print("block: ", get_block_grasp(m, d), "| self: ", get_self_collision(m, d, cc), "| table: ", get_table_collision(m, d, cc))
+            # print("block: ", get_block_grasp(m, d), "| self: ", get_self_collision(m, d, cc), "| table: ", get_table_collision(m, d, cc))
 
     except KeyboardInterrupt:
         pass

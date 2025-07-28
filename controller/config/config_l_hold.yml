@@ -1,4 +1,4 @@
-hold: 1000
+hold: 10
 pos:
   kp: 
     - 120.0 # x

@@ -4,8 +4,8 @@ import matplotlib
 np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 matplotlib.use('Agg')  # Set backend to non-interactive
 from controller.controller_utils import get_task_space_state, pid_task_ctrl
-from utils import load_model, reset, get_joint_torques, get_jnt_ranges
-from controller.build_traj import build_traj_l_point
+from utils import load_model, reset, get_joint_torques, get_jnt_ranges, get_site_xrotvec
+from controller.build_traj import build_traj_l_hold
 from controller.aux import load_trajectory, cleanup
 import yaml
 import time
@@ -13,11 +13,11 @@ import time
 
 def main():
     
-    model_path = "assets/ur3e_2f85.xml"
-    trajectory_fpath = "controller/data/traj_l_point.csv"
-    config_path = "controller/config/config_l_point.yml"
-    log_fpath = "controller/logs/logs_l_point/"
-    ctrl_mode = "l_point"
+    model_path = "assets/main.xml"
+    trajectory_fpath = "controller/data/traj_l_hold.csv"
+    config_path = "controller/config/config_l_hold.yml"
+    log_fpath = "controller/logs/logs_l_hold/"
+    ctrl_mode = "l_hold"
 
     with open(config_path, "r") as f: yml = yaml.safe_load(f)
     pos_gains = { k:np.diag(v) for k, v in yml["pos"].items() } 
@@ -28,12 +28,13 @@ def main():
     # 2f85  = 8  nq, 8  nv, 1 nu
     # total = 14 nq, 14 nv, 7 nu
     m, d = load_model(model_path)
-    reset(m, d)
+    reset(m, d, "down")
     
-    build_traj_l_point(get_task_space_state(m, d), hold, trajectory_fpath)
+    build_traj_l_hold(get_task_space_state(m, d), hold, trajectory_fpath)
     traj_target = load_trajectory(trajectory_fpath)
     T = traj_target.shape[0]
     traj_true = np.zeros_like(traj_target)
+
 
     jnt_ranges = get_jnt_ranges(m) # NEEDED IN THIS CASE?
     pos_errs = np.zeros(shape=(T, 3))

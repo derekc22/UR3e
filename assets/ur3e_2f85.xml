@@ -346,5 +346,6 @@
 
   <keyframe>
     <key name="home" qpos="0 0 0 0 0 0 0 0 0 0 0 0 0 0"/>
+    <key name="down" qpos="0 -1.5708 1.5708 -1.5708 -1.5708 0 0 0 0 0 0 0 0 0"/>
   </keyframe>
 </mujoco>

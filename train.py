@@ -21,11 +21,10 @@ def main():
     # )
     env = make_vec_env(
         "gymnasium_env/ur3e-v0",
-        n_envs=1,
+        n_envs=2,
         # env_kwargs={"render_mode": None},
-        # env_kwargs={"render_mode": "rgb_array"},
-        env_kwargs={"render_mode": "human"},
-        # vec_env_cls=SubprocVecEnv
+        env_kwargs={"render_mode": "rgb_array"},
+        # env_kwargs={"render_mode": "human"},
         vec_env_cls=DummyVecEnv
     )
 
@@ -55,7 +54,7 @@ def main():
 
     # Train the model
     model.learn(
-        total_timesteps=10000,
+        total_timesteps=100_000,
         callback=eval_callback
     )
 
