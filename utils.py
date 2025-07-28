@@ -14,7 +14,7 @@ def load_model(model_path: str) -> tuple[mujoco.MjModel, mujoco.MjData]:
 
 def reset(m: mujoco.MjModel, 
           d: mujoco.MjData, 
-          keyframe: str = 'home') -> None:
+          keyframe: str) -> None:
     init_qpos = m.keyframe(keyframe).qpos
     init_qvel = m.keyframe(keyframe).qvel
     mujoco.mj_resetData(m, d) 
@@ -23,7 +23,7 @@ def reset(m: mujoco.MjModel,
     mujoco.mj_step(m, d)
 
 
-###################### BODY, SITE, JOINT ID ############################
+###################### BODY, SITE, JOINT ID/NAME ############################
 
 def get_body_id(m: mujoco.MjModel,
                 body: str) -> int:
@@ -140,6 +140,11 @@ def get_site_xrotvec(m: mujoco.MjModel,
 
 ###################### DATA ############################
 
+def get_body_size(m: mujoco.MjModel, 
+                  body: str) -> np.ndarray:
+    return m.geom_size[m.geom_bodyid == get_body_id(m, body)][0]
+
+
 def get_joint_torques(d):
     joints = [
         "shoulder_pan_actuatorfrc",
@@ -200,8 +205,6 @@ def get_jnt_range(m: mujoco.MjModel,
 def get_jnt_ranges(m: mujoco.MjModel) -> np.ndarray:
     return m.jnt_range
 
-
-###################### UTILITIES ############################
 
 def get_children_deep(m: mujoco.MjModel, 
                       parent_id: int) -> list:

@@ -16,7 +16,7 @@ env = gym.make(
 )
 
 obs, _ = env.reset()
-for _ in range(1000):
+for _ in range(1000000):
     action, _ = model.predict(obs, deterministic=True)
     obs, _, terminated, truncated, _ = env.step(action)
     

@@ -63,6 +63,10 @@ def main():
         viewer.sync()
         t = time.time() -  start
 
+        # print(get_body_size(m, "fish"))
+        # get_mug_toppled(m, d)
+        print(get_mug_toppled(m, d))
+
         # print(get_self_collision(m, d, collision_cache))
         # print(get_table_collision(m, d, collision_cache))
         # print(get_boolean_grasp_contact(d))

@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
+from utils import *
+import os
 np.set_printoptions(
     linewidth=400,     # Wider output (default is 75)
     threshold=np.inf,  # Print entire array, no summarization with ...
@@ -9,28 +11,79 @@ np.set_printoptions(
 )
 
 
-def build_traj_l_pick_and_place(start: np.ndarray, 
-                                stop: np.ndarray,
+
+
+def build_traj_l_hold(start: np.ndarray, 
+                      hold: int,
+                      trajectory_fpath: str = None) -> None:
+
+    traj = np.repeat(np.expand_dims(start, axis=0), repeats=1000*hold, axis=0)
+    
+    if not trajectory_fpath:
+        return traj
+    
+    save_traj(traj, trajectory_fpath, ctrl_mode="l")
+    
+
+def build_traj_l_pick_place(start: np.ndarray, 
+                            destinations: list[np.ndarray],
+                            hold: int,
+                            trajectory_fpath: str = None) -> None:
+
+    # FOR PD CONTROL, HOLD CAN BE NON-STANDARDIZED
+    pick, place = destinations
+    traj_pick = build_traj_l_point_custom(start, pick, hold=120)
+    # traj_place = build_traj_l_point_custom(traj_pick[-1, :], place, hold=5)
+
+    up = traj_pick[-1, :] + [0, 0, 0.2, 0, 0, 0, 1]
+    traj_up = build_traj_l_point_custom(traj_pick[-1, :], up, hold=120)
+    
+    place += [0, 0, 0.025, 0, 0, 0, 0]
+    traj_place = build_traj_l_point_custom(traj_up[-1, :], place, hold=120)
+    
+    end_drop = np.append(traj_place[-1, :-1], 0)
+    traj_drop = build_traj_l_point_custom(traj_place[-1, :], end_drop, hold=120)
+    
+    traj = np.vstack([
+        traj_pick,
+        traj_up, 
+        traj_place,
+        traj_drop
+    ])
+    
+
+    if not trajectory_fpath:
+        return traj
+    
+    save_traj(traj, trajectory_fpath, ctrl_mode="l")
+
+
+
+
+def build_traj_l_pick_move_place(start: np.ndarray, 
+                                destinations: list[np.ndarray],
                                 hold: int,
                                 trajectory_fpath: str = None) -> None:
 
     # FOR PID CONTROL, HOLD MUST BE STANDARDIZED
-    # pick, place = stop
+    # pick, place = destinations
     # traj_pick = build_traj_l_point_custom(start, pick, hold)
     # traj_move = build_traj_l(traj_pick[-1, :], hold)
     # traj_place = build_traj_l_point_custom(traj_move[-1, :], place, hold)
     
-    # end_drop = np.append(traj_place[-1, :-1], 0)
-    # traj_drop = build_traj_l_point_custom(traj_place[-1, :], end_drop, hold)
+    # drop = np.append(traj_place[-1, :-1], 0)
+    # traj_drop = build_traj_l_point_custom(traj_place[-1, :], drop, hold)
 
     # FOR PD CONTROL, HOLD CAN BE NON-STANDARDIZED
-    pick, place = stop
+    pick, place = destinations
     traj_pick = build_traj_l_point_custom(start, pick, hold)
+    
     traj_move = build_traj_l(traj_pick[-1, :], hold=120)
+    
     traj_place = build_traj_l_point_custom(traj_move[-1, :], place, hold=50)
     
-    end_drop = np.append(traj_place[-1, :-1], 0)
-    traj_drop = build_traj_l_point_custom(traj_place[-1, :], end_drop, hold=5)
+    drop = np.append(traj_place[-1, :-1], 0)
+    traj_drop = build_traj_l_point_custom(traj_place[-1, :], drop, hold=5)
     
     traj = np.vstack([
         traj_pick, 
@@ -38,21 +91,8 @@ def build_traj_l_pick_and_place(start: np.ndarray,
         traj_place,
         traj_drop
     ])
-
-    # Create DataFrame
-    df = pd.DataFrame({
-        'x': traj[:, 0],
-        'y': traj[:, 1],
-        'z': traj[:, 2],
-        'rx':traj[:, 3],
-        'ry':traj[:, 4],
-        'rz':traj[:, 5],
-        'g': traj[:, 6]
-    })
-
-    # Save to CSV
-    df.to_csv(trajectory_fpath, index=False)
-    print(f"Generated smooth trajectory saved to {trajectory_fpath}")
+    
+    save_traj(traj, trajectory_fpath, ctrl_mode="l")
 
 
 
@@ -61,7 +101,8 @@ def build_traj_l_point_custom(start: np.ndarray,
                               hold: int) -> None:
 
     # Generate trajectory points
-    num_points = 1000
+    # num_points = 5
+    num_points = 30
     t = np.linspace(0, 1, num_points+1)
             
     traj = np.vstack([start, stop])
@@ -78,14 +119,17 @@ def build_traj_l_point_custom(start: np.ndarray,
     rz_interp = interp1d(t_control, traj[:, 5], kind='linear')
     g_interp =  interp1d(t_control, traj[:, 6], kind='linear')
 
-    # Generate smooth trajectory    
+    # Generate smooth trajectory
+    # Slice at t[1:] to avoid holding at the start point    
     x = x_interp(t[1:])
     y = y_interp(t[1:])
     z = z_interp(t[1:])
     rx = rx_interp(t[1:])
     ry = ry_interp(t[1:])
     rz = rz_interp(t[1:])
-    g = np.linspace(start[-1], stop[-1], num_points)
+    g = g_interp(t[1:])
+    
+    # g = np.linspace(start[-1], stop[-1], num_points)
     
     return np.repeat(np.vstack([
         x, y, z, rx, ry, rz, g]).T, 
@@ -102,7 +146,7 @@ def build_traj_l_point(start: np.ndarray,
                        trajectory_fpath: str = None) -> None:
 
     # Generate trajectory points
-    num_points = 1000
+    num_points = 500
     t = np.linspace(0, 1, num_points+1)
 
     stop = np.hstack([ np.random.uniform(-0.6, 0.6, size=2), np.random.uniform(0.7, 0.8), [0, 0, 0], 1])
@@ -121,7 +165,8 @@ def build_traj_l_point(start: np.ndarray,
     rz_interp = interp1d(t_control, traj[:, 5], kind='linear')
     g_interp =  interp1d(t_control, traj[:, 6], kind='linear')
 
-    # Generate smooth trajectory    
+    # Generate smooth trajectory
+    # Slice at t[1:] to avoid holding at the start point    
     x = x_interp(t[1:])
     y = y_interp(t[1:])
     z = z_interp(t[1:])
@@ -130,7 +175,7 @@ def build_traj_l_point(start: np.ndarray,
     rz = rz_interp(t[1:])
     g = g_interp(t[1:])
     
-    g = np.linspace(0, 1, num_points)
+    # g = np.linspace(0, 1, num_points)
 
     traj = np.repeat(np.vstack(
         [x, y, z, rx, ry, rz, g]).T,
@@ -140,21 +185,7 @@ def build_traj_l_point(start: np.ndarray,
     if not trajectory_fpath:
         return traj
     
-    # Create DataFrame
-    df = pd.DataFrame({
-        'x': traj[:, 0],
-        'y': traj[:, 1],
-        'z': traj[:, 2],
-        'rx':traj[:, 3],
-        'ry':traj[:, 4],
-        'rz':traj[:, 5],
-        'g': traj[:, 6]
-    })
-
-    # Save to CSV
-    df.to_csv(trajectory_fpath, index=False)
-    print(f"Generated smooth trajectory with {num_points} points saved to {trajectory_fpath}")
-    
+    save_traj(traj, trajectory_fpath, ctrl_mode="l")
 
 
 
@@ -164,11 +195,12 @@ def build_traj_l(start: np.ndarray,
                  trajectory_fpath: str = None) -> None:
 
     # Generate trajectory points
-    num_points = 1000
+    num_points = 500
     t = np.linspace(0, 1, num_points)
 
     # Generate random waypoints and interpolate for smoothness
-    np.random.seed(27)  # For reproducible results
+    # np.random.seed(42)  # For reproducible results
+    np.random.seed(49)  # For reproducible results
 
     # Define workspace bounds for UR3e
     x_bounds = [0.2, 0.5]
@@ -201,6 +233,7 @@ def build_traj_l(start: np.ndarray,
     rz_interp = interp1d(t_control, rz_control, kind='cubic')
 
     # Generate smooth trajectory
+    # Slice at t[1:] to avoid holding at the start point
     x = x_interp(t)
     y = y_interp(t)
     z = z_interp(t)
@@ -208,9 +241,9 @@ def build_traj_l(start: np.ndarray,
     ry = ry_interp(t)
     rz = rz_interp(t)
 
-    rx = np.tile([0, 0, 0], num_points // 3 + 1)[:num_points]
-    ry = np.tile([0, 0, 0], num_points // 3 + 1)[:num_points]
-    rz = np.tile([0, 0, 0], num_points // 3 + 1)[:num_points]
+    rx = np.full(num_points, -1.209)
+    ry = np.full(num_points, -1.209)
+    rz = np.full(num_points, 1.209)
     
     # Gripper control (0 = open, 1 = closed)
     # g cycles through 0, 0.5, 1
@@ -227,20 +260,8 @@ def build_traj_l(start: np.ndarray,
     if not trajectory_fpath:
         return traj
     
-    # Create DataFrame
-    df = pd.DataFrame({
-        'x': traj[:, 0],
-        'y': traj[:, 1],
-        'z': traj[:, 2],
-        'rx':traj[:, 3],
-        'ry':traj[:, 4],
-        'rz':traj[:, 5],
-        'g': traj[:, 6]
-    })
+    save_traj(traj, trajectory_fpath, ctrl_mode="l")
 
-    # Save to CSV
-    df.to_csv(trajectory_fpath, index=False)
-    print(f"Generated smooth trajectory with {num_points} points saved to {trajectory_fpath}")
 
 
 
@@ -251,7 +272,7 @@ def build_traj_j(start: np.ndarray,
                  trajectory_fpath: str = None) -> None:
 
     # Generate trajectory points
-    num_points = 1000
+    num_points = 500
     t = np.linspace(0, 1, num_points)
 
     # Generate random waypoints and interpolate for smoothness
@@ -288,6 +309,7 @@ def build_traj_j(start: np.ndarray,
 
 
     # Generate smooth trajectory
+    # Slice at t[1:] to avoid holding at the start point
     j1 = j1_interp(t)
     j2 = j2_interp(t)
     j3 = j3_interp(t)
@@ -328,25 +350,12 @@ def build_traj_j(start: np.ndarray,
     if not trajectory_fpath:
         return traj
     
-    # Create DataFrame
-    df = pd.DataFrame({
-        'j1': traj[:, 0],
-        'j2': traj[:, 1],
-        'j3': traj[:, 2],
-        'j4':traj[:, 3],
-        'j5':traj[:, 4],
-        'j6':traj[:, 5],
-        'g': traj[:, 6]
-    })
-
-    # Save to CSV
-    df.to_csv(trajectory_fpath, index=False)
-    print(f"Generated smooth trajectory with {num_points} points saved to {trajectory_fpath}")
+    save_traj(traj, trajectory_fpath, ctrl_mode="j")
 
 
 
-
-def build_gripless_traj_mug(start: np.ndarray, 
+# @DEPRECATED
+def build_gripless_traj_gym(start: np.ndarray, 
                             stop: np.ndarray,
                             hold: int) -> np.ndarray:
 
@@ -367,7 +376,8 @@ def build_gripless_traj_mug(start: np.ndarray,
     ry_interp = interp1d(t_control, traj[:, 4], kind='linear')
     rz_interp = interp1d(t_control, traj[:, 5], kind='linear')
 
-    # Generate smooth trajectory    
+    # Generate smooth trajectory
+    # Slice at t[1:] to avoid holding at the start point    
     x = x_interp(t[1:])
     y = y_interp(t[1:])
     z = z_interp(t[1:])
@@ -375,18 +385,24 @@ def build_gripless_traj_mug(start: np.ndarray,
     ry = ry_interp(t[1:])
     rz = rz_interp(t[1:])
     
-    # return np.vstack([
-    #     x, y, z, rx, ry, rz   
-    # ]).T
-    
-    # traj = np.vstack([
-    #     x, y, z, rx, ry, rz   
-    # ]).T
-    # return np.repeat(
-    #     traj,
-    #     hold, axis=0)
 
     return np.repeat(np.vstack(
         [x, y, z, rx, ry, rz]).T,
         repeats=hold, axis=0
     )
+
+
+
+
+
+def save_traj(traj: np.ndarray,
+              trajectory_fpath: str,
+              ctrl_mode: str) -> None:
+    
+    columns = ['j1', 'j2', 'j3', 'j4', 'j5', 'j6', 'g'] if ctrl_mode == 'j' else ['x', 'y', 'z', 'rx', 'ry', 'rz', 'g']
+    df = pd.DataFrame(traj, columns=columns)
+
+    # Save to CSV
+    os.makedirs("controller/data/", exist_ok=True)
+    df.to_csv(trajectory_fpath, index=False)
+    print(f"Generated smooth trajectory saved to {trajectory_fpath}")
