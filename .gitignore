@@ -6,4 +6,6 @@
 ur3e_tensorboard/*
 controller/logs
 controller/data
-policies/archive/*
+policies/gymnasium_env_policies/archive/*
+imitation_env/data/*
+policies/imitation_env_policies/expert_demos/*

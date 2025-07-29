@@ -34,7 +34,6 @@ def main():
     reset_with_mug(m, d, mode="deterministic", keyframe="down")
 
     init_r = get_site_xrotvec(m, d, "tcp")
-    print(init_r)
     pick = np.hstack([get_mug_xpos(m, d), init_r, 0.5])
     place = np.hstack([get_ghost_xpos(m, d), init_r, 1])
     # place = np.hstack([ place[:2], place[2] + get_body_size(m, "ghost")[-1]/2, place[3:] ])
