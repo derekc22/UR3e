@@ -74,7 +74,7 @@ def main():
     )
 
     # Save the model
-    model.save("ur3e_pickplace_model")
+    model.save("gymnasium_env/ur3e_pickplace_model")
 
 if __name__ == "__main__":
     main()

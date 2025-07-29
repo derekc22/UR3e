@@ -25,7 +25,7 @@ save_rate = int(100/render_fps**0.6505)
 class UR3eEnv(MujocoEnv):
 
     metadata = {
-        "render_modes": ["human", "rgb_array"],
+        "render_modes": ["human", "rgb_array", "depth_array"],
         "render_fps": render_fps
     }    
 
@@ -256,103 +256,6 @@ class UR3eEnv(MujocoEnv):
         ])
     
 
-    # def compute_reward(self, observation, action):
-    #     # Unpack observation components
-    #     gripper_pos = observation[:3]      # End-effector position
-    #     block_center = observation[3:6]    # Block center position
-    #     target_pos = observation[6:9]      # Target position
-    #     grasp_state = observation[9]       # 0=no contact, 1=1-pad contact, 2=2-pad contact
-    #     pad_pos = observation[10:13]       # Gripper pad position (right pad)
-        
-    #     # Block dimensions
-    #     block_half_height = get_body_size(self.model, "fish")[-1]
-    #     block_top_z = block_center[2] + block_half_height
-    #     block_bottom_z = block_center[2] - block_half_height
-        
-    #     # Key spatial relationships
-    #     pad_to_block_top = pad_pos[2] - block_top_z
-    #     gripper_to_block_center = gripper_pos[2] - block_center[2]
-    #     horizontal_error = np.linalg.norm(gripper_pos[:2] - block_center[:2])
-        
-    #     # ---- GRASP READINESS ----
-    #     # Smoother readiness with lower coefficients
-    #     grasp_readiness = (
-    #         np.exp(-40 * horizontal_error**2) * 
-    #         np.exp(-40 * pad_to_block_top**2) *
-    #         np.exp(-40 * gripper_to_block_center**2)
-    #     )
-        
-    #     # ---- REWARD COMPONENTS ----
-    #     # 1. Height alignment reward (smooth gradient)
-    #     ideal_height_above = 0.02  # 2cm above block center
-    #     height_error = gripper_to_block_center - ideal_height_above
-    #     height_reward = 8 * np.exp(-80 * height_error**2)
-        
-    #     # 2. Horizontal alignment reward
-    #     alignment_reward = 6 * np.exp(-50 * horizontal_error**2)
-        
-    #     # 3. Progressive contact rewards
-    #     contact_reward = (
-    #         10 * (grasp_state >= 1) +      # Reward for any contact
-    #         15 * (grasp_state == 2)        # Bonus for full grasp
-    #     ) * grasp_readiness                # Scaled by readiness
-        
-    #     # 4. Grip strength reward
-    #     grip_strength = action[-1]
-    #     grip_reward = 8 * grip_strength * grasp_readiness
-        
-    #     # 5. Lifting reward (only when grasped)
-    #     lift_reward = 12 * (grasp_state == 2) * np.tanh(4 * block_bottom_z)
-        
-    #     # 6. Placement reward
-    #     d_place = np.linalg.norm(block_center - target_pos)
-    #     placement_reward = 20 * np.exp(-70 * d_place**2)
-        
-    #     # 7. Penalties
-    #     dangerous_height_penalty = -4 * max(0, block_center[2] - gripper_pos[2] + 0.005)
-        
-    #     penalties = (
-    #         -10 * get_self_collision(self.model, self.data, self.collision_cache) +
-    #         -8 * get_table_collision(self.model, self.data, self.collision_cache) +
-    #         -6 * get_mug_toppled(self.model, self.data) +
-    #         dangerous_height_penalty
-    #     )
-        
-    #     # 8. Contact achievement bonus
-    #     contact_achievement_bonus = 12 * grasp_state * grasp_readiness * np.tanh(8 * grip_strength)
-        
-    #     # ---- FINAL REWARD ----
-    #     reward = (
-    #         height_reward +
-    #         alignment_reward +
-    #         contact_reward +
-    #         grip_reward +
-    #         lift_reward +
-    #         placement_reward +
-    #         contact_achievement_bonus +
-    #         penalties
-    #     )
-        
-    #     # Debug output
-    #     if self.t % 20 == 0:
-    #         print(f"t: {self.t:4d} | R: {reward:6.2f} | "
-    #             f"Ht: {height_reward:5.2f} | "
-    #             f"Align: {alignment_reward:5.2f} | "
-    #             f"Contact: {contact_reward:5.2f} | "
-    #             f"Grip: {grip_reward:5.2f} | "
-    #             f"Lift: {lift_reward:5.2f} | "
-    #             f"Place: {placement_reward:5.2f} | "
-    #             f"Bonus: {contact_achievement_bonus:5.2f} | "
-    #             f"Pen: {penalties:5.2f} | "
-    #             f"Readiness: {grasp_readiness:.2f} | "
-    #             f"GState: {grasp_state} | "
-    #             f"Grip: {grip_strength:.2f} | "
-    #             f"GrZ: {gripper_pos[2]:.3f} | "
-    #             f"BZ: {block_center[2]:.3f}")
-
-    #     return reward
-
-
 
 
     def compute_reward(self, observation, action):
@@ -388,19 +291,19 @@ class UR3eEnv(MujocoEnv):
         
         # ---- REWARD COMPONENTS ----
         # 1. SMART DESCENT REWARD (CORRECTED)
-        ideal_height_above = 0.015  # 1.5cm above block center
+        ideal_height_above = 0.5  # 1.5cm above block center
         height_error = gripper_to_block_center - ideal_height_above
         # descent_reward = 15 * np.exp(-100 * height_error**2)
         # descent_reward = 30 * (height_error+1) * np.exp(-height_error)
-        z_tol = 0.01
+        z_tol = 0.1
         descent_reward =  1 * ( (1/z_tol) * (height_error+z_tol) * np.exp(-(1/z_tol)*height_error) )
         # print(descent_reward)
         
         # ---- GRASP READINESS ----
         grasp_readiness = (
-            np.exp(-80 * horizontal_error**2) * 
-            np.exp(-165 * pad_to_block_top**2) *
-            np.exp(-165 * height_error**2) *
+            np.exp(- horizontal_error**2) * 
+            np.exp(- pad_to_block_top**2) *
+            np.exp(- height_error**2) *
             100*np.exp(-action[-1]**2)
         )
         
@@ -431,7 +334,7 @@ class UR3eEnv(MujocoEnv):
         # dangerous_height_penalty = -30 * np.exp(-500 * max(0, block_center[2] - gripper_pos[2])**2)
         # height_err_danger = block_center[2] - gripper_pos[2]
         # dangerous_height_penalty = 10 * ( (1/z_tol) * (-height_err_danger+z_tol) * np.exp((1/z_tol)*height_err_danger) )
-        dangerous_height_penalty = min(0, -10000 * (block_center[2] - gripper_pos[2] + 0.035)**3  )
+        dangerous_height_penalty = min(0, -100000000000 * (block_center[2] - gripper_pos[2] + 0.5)**3  )
         # print(grasp_readiness)
         # print(dangerous_height_penalty, -10000 * (block_center[2] - gripper_pos[2] + 0.035)**3) 
 
@@ -448,11 +351,11 @@ class UR3eEnv(MujocoEnv):
         # print(penalties)
         
         # 8. Action encouragement
-        action_reward = 7.5 * grip_strength * grasp_readiness
+        action_reward = 700.5 * grip_strength * grasp_readiness
         
         # 9. Contact achievement bonus
-        contact_achievement_bonus = 17.5 * (grasp_state >= 1) * grasp_readiness * np.tanh(10 * grip_strength)
-        # contact_achievement_bonus = 17.5 * (grasp_state == 2) * grasp_readiness * np.tanh(10 * grip_strength) #* (grasp_state)
+        # contact_achievement_bonus = 1700.5 * (grasp_state >= 1) * grasp_readiness * np.tanh(10 * grip_strength)
+        contact_achievement_bonus = 1700.5 * (grasp_state == 2) * grasp_readiness * np.tanh(10 * grip_strength) #* (grasp_state)
         
         # ---- FINAL REWARD ----
         reward = (

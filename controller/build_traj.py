@@ -35,7 +35,7 @@ def build_traj_l_pick_place(start: np.ndarray,
     traj_pick = build_traj_l_point_custom(start, pick, hold=120)
     # traj_place = build_traj_l_point_custom(traj_pick[-1, :], place, hold=5)
 
-    up = traj_pick[-1, :] + [0, 0, 0.2, 0, 0, 0, 1]
+    up = traj_pick[-1, :] + [0, 0, 0.15, 0, 0, 0, 1-traj_pick[-1, -1]]
     traj_up = build_traj_l_point_custom(traj_pick[-1, :], up, hold=120)
     
     place += [0, 0, 0.025, 0, 0, 0, 0]
@@ -46,6 +46,43 @@ def build_traj_l_pick_place(start: np.ndarray,
     
     traj = np.vstack([
         traj_pick,
+        traj_up, 
+        traj_place,
+        traj_drop
+    ])
+    
+
+    if not trajectory_fpath:
+        return traj
+    
+    save_traj(traj, trajectory_fpath, ctrl_mode="l")
+    
+
+def build_traj_l_pick_place_RL(start: np.ndarray, 
+                            destinations: list[np.ndarray],
+                            hold: int,
+                            trajectory_fpath: str = None) -> None:
+
+    # FOR PD CONTROL, HOLD CAN BE NON-STANDARDIZED
+    pick, place = destinations
+    traj_pick = build_traj_l_point_custom(start, pick, hold=120)
+    # traj_place = build_traj_l_point_custom(traj_pick[-1, :], place, hold=5)
+    
+    grab = np.append(traj_pick[-1, :-1], 1)
+    traj_grab = build_traj_l_point_custom(traj_pick[-1, :], grab, hold=20)
+
+    up = traj_grab[-1, :] + [0, 0, 0.15, 0, 0, 0, 0]
+    traj_up = build_traj_l_point_custom(traj_grab[-1, :], up, hold=120)
+    
+    place += [0, 0, 0.025, 0, 0, 0, 0]
+    traj_place = build_traj_l_point_custom(traj_up[-1, :], place, hold=120)
+    
+    end_drop = np.append(traj_place[-1, :-1], 0)
+    traj_drop = build_traj_l_point_custom(traj_place[-1, :], end_drop, hold=120)
+    
+    traj = np.vstack([
+        traj_pick,
+        traj_grab,
         traj_up, 
         traj_place,
         traj_drop
