@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
-from utils import *
+from utils.utils import *
 import os
 np.set_printoptions(
     linewidth=400,     # Wider output (default is 75)
@@ -64,27 +64,37 @@ def build_traj_l_pick_place_RL(start: np.ndarray,
                             trajectory_fpath: str = None) -> None:
 
     # FOR PD CONTROL, HOLD CAN BE NON-STANDARDIZED
-    pick, place = destinations
+    block, target = destinations
+    
+    pick = np.hstack([block[:2], [start[2]], block[3:]])
     traj_pick = build_traj_l_point_custom(start, pick, hold=120)
     # traj_place = build_traj_l_point_custom(traj_pick[-1, :], place, hold=5)
     
-    grab = np.append(traj_pick[-1, :-1], 1)
-    traj_grab = build_traj_l_point_custom(traj_pick[-1, :], grab, hold=20)
+    down = np.hstack([traj_pick[-1, :2], [block[2]], traj_pick[-1, 3:]])
+    traj_down = build_traj_l_point_custom(traj_pick[-1, :], down, hold=120)
+
+    grab = np.append(traj_down[-1, :-1], 1)
+    traj_grab = build_traj_l_point_custom(traj_down[-1, :], grab, hold=20)
 
     up = traj_grab[-1, :] + [0, 0, 0.15, 0, 0, 0, 0]
     traj_up = build_traj_l_point_custom(traj_grab[-1, :], up, hold=120)
     
-    place += [0, 0, 0.025, 0, 0, 0, 0]
+    place = np.hstack([target[:2], traj_up[-1, 2], target[3:]])
     traj_place = build_traj_l_point_custom(traj_up[-1, :], place, hold=120)
     
-    end_drop = np.append(traj_place[-1, :-1], 0)
-    traj_drop = build_traj_l_point_custom(traj_place[-1, :], end_drop, hold=120)
+    descend = target + [0, 0, 0.025, 0, 0, 0, 0] 
+    traj_descend = build_traj_l_point_custom(traj_place[-1, :], descend, hold=120)
+    
+    end_drop = np.append(traj_descend[-1, :-1], 0)
+    traj_drop = build_traj_l_point_custom(traj_descend[-1, :], end_drop, hold=120)
     
     traj = np.vstack([
         traj_pick,
+        traj_down,
         traj_grab,
         traj_up, 
         traj_place,
+        traj_descend,
         traj_drop
     ])
     

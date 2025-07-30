@@ -4,11 +4,11 @@ import matplotlib
 np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 matplotlib.use('Agg')  # Set backend to non-interactive
 from controller.controller_utils import get_task_space_state, pid_task_ctrl
-from utils import *
+from utils.utils import *
 from controller.build_traj import build_traj_l_pick_move_place, build_traj_l_pick_place
 from controller.aux import load_trajectory, cleanup
-from gymnasium_env.gymnasium_env_utils import *
-from utils import load_model, get_joint_torques, get_jnt_ranges
+from utils.gym_utils import *
+from utils.utils import load_model, get_joint_torques, get_jnt_ranges
 import yaml
     
 

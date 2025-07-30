@@ -3,7 +3,7 @@ import mujoco.viewer
 import time
 import numpy as np
 from controller.controller_utils import *
-from gymnasium_env.gymnasium_env_utils import *
+from utils.gym_utils import *
 np.set_printoptions(
     linewidth=400,     # Wider output (default is 75)
     threshold=np.inf,  # Print entire array, no summarization with ...
