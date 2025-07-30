@@ -70,8 +70,6 @@ def get_body_xpos(m: mujoco.MjModel,
 def get_body_xquat(m: mujoco.MjModel, 
                    d: mujoco.MjData,
                    body: str) -> np.ndarray:
-    # body_id = get_body_id(m, body)
-    # xmat = np.array(d.xmat[body_id]).reshape(3, 3)
     xmat = get_body_xmat(m, d, body).reshape(3, 3)
     return R.from_matrix(xmat).as_quat()
 
@@ -110,8 +108,6 @@ def get_site_xpos(m: mujoco.MjModel,
 def get_site_xquat(m: mujoco.MjModel, 
                    d: mujoco.MjData,
                    site: str) -> np.ndarray:
-    # site_id = get_site_id(m, site)
-    # xmat = np.array(d.site(site_id).xmat).reshape(3, 3)
     xmat = get_site_xmat(m, d, site).reshape(3, 3)
     return R.from_matrix(xmat).as_quat()
 
@@ -137,6 +133,32 @@ def get_site_xrotvec(m: mujoco.MjModel,
     xmat = get_site_xmat(m, d, site).reshape(3, 3)
     return R.from_matrix(xmat).as_rotvec()
 
+
+###################### SITE XPOS, XQUAT, R, XMAT, XROTVEC ############################
+
+def get_site_velp(m: mujoco.MjModel, 
+                  d: mujoco.MjData, 
+                  site: str) -> np.ndarray:
+    return get_site_vel(m, d, site)[3:]
+
+
+def get_site_velr(m: mujoco.MjModel, 
+                  d: mujoco.MjData, 
+                  site: str) -> np.ndarray:
+    return get_site_vel(m, d, site)[:3]
+
+
+def get_site_vel(m: mujoco.MjModel, 
+                 d: mujoco.MjData, 
+                 site: str) -> tuple[np.ndarray]:
+    
+    vel = np.zeros(6)
+    site_id = get_site_id(m, site)
+    mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_SITE, site_id, vel, flg_local=0)
+    # fig_local=0 returns the velocity vector in the world frame
+    # fig_local=1 return the velocity vector in the site's local frame
+
+    return vel # [ωx, ωy, ωz, vx, vy, vz] 
 
 ###################### DATA ############################
 

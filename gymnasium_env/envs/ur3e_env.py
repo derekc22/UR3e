@@ -251,7 +251,7 @@ class UR3eEnv(MujocoEnv):
             get_2f85_xpos(self.model, self.data), # 3 dim [:3]
             get_mug_xpos(self.model, self.data), # 3 dim [3:6]
             get_ghost_xpos(self.model, self.data), # 3 dim [6:9] 
-            get_block_grasp(self.model, self.data), # 1 dim [9:]
+            get_block_grasp_state(self.model, self.data), # 1 dim [9:]
             get_site_xpos(self.model, self.data, "right_pad1_site")
         ])
     

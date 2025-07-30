@@ -86,7 +86,7 @@ def main():
             # print(f"grip_target: {traj_target[t, -1]}")
             # print("------------------------------------------------------------------------------------------")
 
-            # print("block: ", get_block_grasp(m, d), "| self: ", get_self_collision(m, d, cc), "| table: ", get_table_collision(m, d, cc))
+            # print("block: ", get_block_grasp_state(m, d), "| self: ", get_self_collision(m, d, cc), "| table: ", get_table_collision(m, d, cc))
 
     except KeyboardInterrupt:
         pass

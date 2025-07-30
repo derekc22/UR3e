@@ -38,7 +38,7 @@ def main():
     # total = 21 nq, 20 nv, 7 nu
 
 
-    reset(m, d)
+    reset(m, d, "down")
 
 
     viewer = mujoco.viewer.launch_passive(m, d)
@@ -62,16 +62,18 @@ def main():
         mujoco.mj_step(m, d)
         viewer.sync()
         t = time.time() -  start
+        
+        # print(get_site_velp(m, d, "tcp"))
 
         # print(get_body_size(m, "fish"))
         # get_mug_toppled(m, d)
-        print(get_mug_toppled(m, d))
+        # print(get_mug_toppled(m, d))
 
         # print(get_self_collision(m, d, collision_cache))
         # print(get_table_collision(m, d, collision_cache))
         # print(get_boolean_grasp_contact(d))
         # print(get_grasp_contact(d))
-        # print(get_block_grasp(m, d))
+        # print(get_block_grasp_state(m, d))
 
         # get_table_collision(m, d, collision_cache)
         
