@@ -84,7 +84,7 @@ def reset_with_mug(m: mujoco.MjModel,
 #         "wrist_3_link", "gripper_base",
 #         *gripper_names,
 #     }
-#     # ---------- convert body names to integer body‑ids -----------------
+#     # ---------- convert body names to integer body-ids -----------------
 #     gripper_bodies = { get_body_id(m, gripper) for gripper in gripper_names }
 #     arm_bodies = { get_body_id(m, arm) for arm in arm_names }
 #     table_body = get_body_id(m, "table")
@@ -92,7 +92,7 @@ def reset_with_mug(m: mujoco.MjModel,
 #     return (gripper_bodies, arm_bodies, table_body)
 
 
-# def get_block_grasp(m: mujoco.MjModel,
+# def get_block_grasp_state(m: mujoco.MjModel,
 #                     d: mujoco.MjData) -> int:
     
 #     one_finger_grip = False
@@ -113,8 +113,8 @@ def reset_with_mug(m: mujoco.MjModel,
 #     return 0
 
 
-def get_block_grasp(m: mujoco.MjModel, 
-                    d: mujoco.MjData) -> int:
+def get_block_grasp_state(m: mujoco.MjModel, 
+                          d: mujoco.MjData) -> int:
     
     contact_pads = set()
     left_pad_id = get_body_id(m, "left_pad")
@@ -155,9 +155,9 @@ def get_self_collision(m: mujoco.MjModel,
                        d: mujoco.MjData,
                        collision_cache: tuple[set, set, int]) -> int:
     """
-    Return 1 if any arm or gripper body (excluding gripper‑to‑gripper pairs)
+    Return 1 if any arm or gripper body (excluding gripper-to-gripper pairs)
     touches the table or another arm/gripper body.  Otherwise return 0.
-    gripper‑to‑gripper contacts are ignored so that other routines can still
+    gripper-to-gripper contacts are ignored so that other routines can still
     inspect them.
     """
 
@@ -183,9 +183,9 @@ def get_table_collision(m: mujoco.MjModel,
                         d: mujoco.MjData,
                         collision_cache: tuple[set, set, int]) -> int:
     """
-    Return 1 if any arm or gripper body (excluding gripper‑to‑gripper pairs)
+    Return 1 if any arm or gripper body (excluding gripper-to-gripper pairs)
     touches the table or another arm/gripper body.  Otherwise return 0.
-    gripper‑to‑gripper contacts are ignored so that other routines can still
+    gripper-to-gripper contacts are ignored so that other routines can still
     inspect them.
     """
 
@@ -213,9 +213,9 @@ def get_table_collision(m: mujoco.MjModel,
 #                         d: mujoco.MjData,
 #                         collision_cache: tuple[set, set, int]) -> int:
 #     """
-#     Return 1 if any arm or gripper body (excluding gripper‑to‑gripper pairs)
+#     Return 1 if any arm or gripper body (excluding gripper-to-gripper pairs)
 #     touches the table or another arm/gripper body.  Otherwise return 0.
-#     gripper‑to‑gripper contacts are ignored so that other routines can still
+#     gripper-to-gripper contacts are ignored so that other routines can still
 #     inspect them.
 #     """
 
@@ -249,9 +249,9 @@ def get_table_collision(m: mujoco.MjModel,
 # def arm_collision(model: mujoco.MjModel,
 #                   data: mujoco.MjData) -> int:
 #     """
-#     Return 1 if any arm or gripper body (excluding gripper‑to‑gripper pairs)
+#     Return 1 if any arm or gripper body (excluding gripper-to-gripper pairs)
 #     touches the table or another arm/gripper body.  Otherwise return 0.
-#     gripper‑to‑gripper contacts are ignored so that other routines can still
+#     gripper-to-gripper contacts are ignored so that other routines can still
 #     inspect them.
 #     """
 #     # ------------------------------------------------------------
@@ -265,7 +265,7 @@ def get_table_collision(m: mujoco.MjModel,
 #             "left_spring_link", "right_spring_link",
 #             "left_follower", "right_follower",
 #             "left_pad", "right_pad",
-#             "left_pad1", "right_pad1",        # include sub‑pads if present
+#             "left_pad1", "right_pad1",        # include sub-pads if present
 #             "left_pad2", "right_pad2",
 #             "left_gripper_pad", "right_gripper_pad",
 #         }
@@ -275,7 +275,7 @@ def get_table_collision(m: mujoco.MjModel,
 #             "wrist_3_link", "gripper_base",
 #             *gripper_names,
 #         }
-#         # ---------- convert body names to integer body‑ids -----------------
+#         # ---------- convert body names to integer body-ids -----------------
 #         gripper_bodies = {
 #             mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, n)
 #             for n in gripper_names

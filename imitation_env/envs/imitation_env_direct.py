@@ -50,9 +50,9 @@ class ImitationEnv(MujocoEnv):
             render_mode=render_mode
         )
         
-        # Action space: [x, y, z, grip] (same as before)
-        low = np.array([0.28799994, 0.13349916, 0.005, 0])
-        high = np.array([0.35799994, 0.35349916, 0.165, 1])
+        # Action space: u
+        low = np.array([-330, -330, -150, -54, -54, -54, 0])
+        high = np.array([330, 330, 150, 54, 54, 54, 255])
         self.action_space = spaces.Box(
             low=low, 
             high=high, 
@@ -70,21 +70,21 @@ class ImitationEnv(MujocoEnv):
 
     def step(self, action):
         # Convert action to full task space command
-        traj = np.hstack([
-            action[:3],  # x, y, z
-            [-1.209, -1.209, 1.209],  # Fixed rotation
-            action[3]    # grip
-        ])
+        # traj = np.hstack([
+        #     action[:3],  # x, y, z
+        #     [-1.209, -1.209, 1.209],  # Fixed rotation
+        #     action[3]    # grip
+        # ])
         
-        u = pid_task_ctrl(
-            0, self.model, self.data, traj, 
-            self.pos_gains, self.rot_gains, 
-            self.pos_errs, self.rot_errs, 
-            self.tot_pos_errs, self.tot_rot_errs
-        )
+        # u = pid_task_ctrl(
+        #     0, self.model, self.data, traj, 
+        #     self.pos_gains, self.rot_gains, 
+        #     self.pos_errs, self.rot_errs, 
+        #     self.tot_pos_errs, self.tot_rot_errs
+        # )
 
         # Step simulation
-        self.do_simulation(u, self.frame_skip)
+        self.do_simulation(action, self.frame_skip)
         observation = self._get_obs()
         
         # Simple reward for demonstration purposes

@@ -55,12 +55,12 @@ def collect_expert_demonstrations(num_demos):
         place = np.hstack([get_ghost_xpos(m, d), init_r, 1])
         
         # Build trajectory in memory
-        # pick = np.hstack([get_mug_xpos(m, d), init_r, 0.0])
-        # traj_target = build_traj_l_pick_place_RL(get_task_space_state(m, d), [pick, place], hold)
+        pick = np.hstack([get_mug_xpos(m, d), init_r, 0.0])
+        traj_target = build_traj_l_pick_place_RL(get_task_space_state(m, d), [pick, place], hold)
         
         # Build trajectory in memory
-        pick = np.hstack([get_mug_xpos(m, d), init_r, 0.5])
-        traj_target = build_traj_l_pick_place(get_task_space_state(m, d), [pick, place], hold)
+        # pick = np.hstack([get_mug_xpos(m, d), init_r, 0.5])
+        # traj_target = build_traj_l_pick_place(get_task_space_state(m, d), [pick, place], hold)
         
         T = traj_target.shape[0]
         
@@ -82,21 +82,15 @@ def collect_expert_demonstrations(num_demos):
         for t in range(T):
             if visualize:
                 viewer.sync()
-
+                
             if t % hold == 0: 
                 tot_pos_errs.fill(0)
                 tot_rot_errs.fill(0)
-            
+
             u = pid_task_ctrl(t, m, d, traj_target[t, :], pos_gains, rot_gains, pos_errs, rot_errs, tot_pos_errs, tot_rot_errs)
-            
+
             # Convert to env action space [x, y, z, grip]
-            env_action = np.array([
-                traj_target[t, 0],  # x
-                traj_target[t, 1],  # y
-                traj_target[t, 2],  # z
-                u[-1]          # grip
-            ])
-            acts.append(env_action)
+            acts.append(u)
             
             # Step simulation
             d.ctrl = u
@@ -133,7 +127,7 @@ def collect_expert_demonstrations(num_demos):
 #     print(f"Saved {len(trajectories)} demonstrations to {save_path}")
     
 
-def save_demonstrations(trajectories, save_path="imitation_env/data/expert_demos.pkl"):
+def save_demonstrations(trajectories, save_path="imitation_env/data/expert_demos_direct.pkl"):
     """Append demonstrations to a pickle file by loading, extending, and overwriting."""
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
@@ -154,7 +148,7 @@ def save_demonstrations(trajectories, save_path="imitation_env/data/expert_demos
 
 
 
-def load_demonstrations(load_path = "imitation_env/data/expert_demos.pkl"):
+def load_demonstrations(load_path = "imitation_env/data/expert_demos_direct.pkl"):
     """Load expert trajectories from a file using pickle."""
     with open(load_path, "rb") as f:
         trajectories = pkl.load(f)
@@ -164,5 +158,5 @@ def load_demonstrations(load_path = "imitation_env/data/expert_demos.pkl"):
 
 if __name__ == "__main__":
     # Collect and save demonstrations
-    expert_trajs = collect_expert_demonstrations(num_demos=500)
+    expert_trajs = collect_expert_demonstrations(num_demos=750)
     save_demonstrations(expert_trajs)

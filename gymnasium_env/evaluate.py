@@ -8,7 +8,7 @@ register(
     entry_point="gymnasium_env.envs.ur3e_env:UR3eEnv"
 )
 
-model = PPO.load("ur3e_pickplace_model")
+model = PPO.load("policies/gymnasium_env_policies/8-sturdy-pick/ur3e_pickplace_model.zip")
 
 env = gym.make(
     "gymnasium_env/ur3e-v0",

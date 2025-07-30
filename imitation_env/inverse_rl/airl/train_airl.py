@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 from imitation.algorithms.adversarial.airl import AIRL
 from imitation.data import rollout
 from imitation.rewards.reward_nets import BasicRewardNet
@@ -19,11 +19,13 @@ def train_airl(expert_trajs):
     # Register the custom environment
     register(
         id="imitation_env/ur3e-v0",
-        entry_point="envs.imitation_env:ImitationEnv"
+        # entry_point="envs.imitation_env:ImitationEnv"
+        entry_point="envs.imitation_env_direct:ImitationEnv"
     )
 
     # Create the vectorized environment
     venv = DummyVecEnv([lambda: ImitationEnv()])
+    venv = VecNormalize(venv, norm_obs=True, norm_reward=False, clip_obs=10.)
 
     # Convert trajectories to transitions, which is the format required by the AIRL trainer
     transitions = rollout.flatten_trajectories(expert_trajs)
@@ -32,7 +34,7 @@ def train_airl(expert_trajs):
     generator = PPO(
         "MlpPolicy",
         venv,
-        n_steps=1024,
+        n_steps=4096,
     )
 
     # The reward network that AIRL will learn
@@ -54,7 +56,7 @@ def train_airl(expert_trajs):
     )
 
     # Train the AIRL agent
-    airl_trainer.train(total_timesteps=40000)
+    airl_trainer.train(total_timesteps=4000000)
 
     # Save the trained policy and reward network
     airl_trainer.policy.save("policies/imitation_env_policies/airl_policy.zip")

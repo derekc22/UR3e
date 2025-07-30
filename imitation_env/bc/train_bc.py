@@ -8,42 +8,56 @@ from imitation_env.collect_demonstrations import load_demonstrations
 from gymnasium.envs.registration import register
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecNormalize
 from stable_baselines3.common.callbacks import EvalCallback
 import numpy as np
+import torch
 
 def train_behavioral_cloning(expert_trajs):
     # Register environment
     register(
         id="imitation_env/ur3e-v0",
-        entry_point="imitation_env.envs.imitation_env:ImitationEnv"
+        # entry_point="envs.imitation_env:ImitationEnv"
+        entry_point="envs.imitation_env_direct:ImitationEnv"
     )    
 
     # Create environment
-    venv = make_vec_env(
-        "imitation_env/ur3e-v0",
-        n_envs=5,
-        env_kwargs={"render_mode": "human"},
-        vec_env_cls=DummyVecEnv
-    )
+    # venv = make_vec_env(
+    #     "imitation_env/ur3e-v0",
+    #     n_envs=5,
+    #     env_kwargs={"render_mode": "human"},
+    #     vec_env_cls=DummyVecEnv
+    # )
 
     # Create the vectorized environment
-    # venv = DummyVecEnv([lambda: ImitationEnv()])
-    
+    venv = DummyVecEnv([lambda: ImitationEnv()])
+    venv = VecNormalize(venv, norm_obs=True, norm_reward=False, clip_obs=10.)
+
 
     # Convert trajectories to transitions
     transitions = rollout.flatten_trajectories(expert_trajs)
     
     # Initialize BC trainer
+    # bc_trainer = bc.BC(
+    #     observation_space=venv.observation_space,
+    #     action_space=venv.action_space,
+    #     demonstrations=transitions,
+    #     policy=PPO("MlpPolicy", venv).policy,
+    #     device="auto",
+    #     rng=np.random.default_rng()  # Add this line
+    # )
+    
     bc_trainer = bc.BC(
         observation_space=venv.observation_space,
         action_space=venv.action_space,
         demonstrations=transitions,
         policy=PPO("MlpPolicy", venv).policy,
         device="auto",
-        rng=np.random.default_rng()  # Add this line
+        optimizer_cls=torch.optim.Adam,
+        optimizer_kwargs={"lr": 1e-4},
+        rng=np.random.default_rng()
     )
-        
+    
     # Train BC
     bc_trainer.train(n_epochs=10)
     
