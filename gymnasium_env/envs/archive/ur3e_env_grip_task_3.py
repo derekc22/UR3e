@@ -4,12 +4,12 @@ from gymnasium import spaces
 from gymnasium.envs.mujoco import MujocoEnv
 from mujoco import MjModel
 import mujoco
-from gymnasium_env.gymnasium_env_utils import *
+from utils.gymnasium_env_utils import *
 from controller.move_l_task import *
 from controller.build_traj import build_gripless_traj_mug
 from controller.controller_utils import get_task_space_state
 import time
-from utils import *
+from utils.utils import *
 np.set_printoptions(
     linewidth=400,     # Wider output (default is 75)
     threshold=np.inf,  # Print entire array, no summarization with ...

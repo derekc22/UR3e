@@ -2,7 +2,7 @@ import numpy as np
 import mujoco
 from scipy.spatial.transform import Rotation as R
 from typing import Callable
-from utils import *
+from utils.utils import *
 
 
 ################################################################################################################################################################################################################################################

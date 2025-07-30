@@ -2,7 +2,7 @@ import numpy as np
 import mujoco
 from scipy.spatial.transform import Rotation as R
 from typing import Callable
-from utils import *
+from utils.utils import *
 
 
 def get_mug_toppled(m: mujoco.MjModel, 
@@ -42,8 +42,9 @@ def get_init(m: mujoco.MjModel,
     if mode == "stochastic":
         noise = np.hstack([
             np.zeros(m.nq-7), # [0:13]
-            np.random.uniform(low=-0.02, high=0.02, size=1), # [13:14]
-            np.random.uniform(low=-0.02, high=0.02, size=1), # [13:14]
+            np.random.uniform(low=-0.02, high=0.02, size=1), # x [13:14]
+            np.random.uniform(low=-0.4, high=0.3, size=1), # y [13:14]
+            # np.random.uniform(low=-0.02, high=0.02, size=1), # [13:14]
             np.zeros(5), # [14:21]
         ])    
         return (init_qpos + noise, init_qvel)

@@ -1,10 +1,45 @@
-import gymnasium as gym
-from stable_baselines3 import PPO
-from imitation_env.envs import ImitationEnv
-import torch
-import numpy as np
+# import torch
+# from stable_baselines3 import PPO
+# from imitation_env.envs import ImitationEnv
 
-def run_trained_policy(policy_path="policies/imitation_env_policies/bc_policy.zip"):
+# def run_trained_gail_policy(policy_path="policies/imitation_env_policies/gail_policy.zip"):
+#     """
+#     Loads and runs a trained policy from GAIL.
+
+#     Args:
+#         policy_path (str): The path to the saved policy file.
+#     """
+#     # Create the environment with rendering enabled
+#     env = ImitationEnv(render_mode="human") #
+
+#     # Load the trained policy
+#     policy = PPO.load(policy_path, env)
+
+#     # Reset the environment to get the initial observation
+#     obs, _ = env.reset() #
+
+#     # Loop indefinitely to run the policy
+#     while True:
+#         # Get the action from the policy
+#         action, _ = policy.predict(obs, deterministic=True) #
+
+#         # Take the action in the environment
+#         obs, _, terminated, truncated, _ = env.step(action) #
+
+#         # If the episode is over, reset the environment
+#         if terminated or truncated:
+#             obs, _ = env.reset() #
+
+# if __name__ == "__main__":
+#     run_trained_gail_policy()
+
+
+
+import torch
+from stable_baselines3 import PPO
+from imitation_env_direct.envs import ImitationEnv
+
+def run_trained_gail_policy(policy_path):
     """
     Loads and runs a trained policy.
 
@@ -38,4 +73,7 @@ def run_trained_policy(policy_path="policies/imitation_env_policies/bc_policy.zi
             obs, _ = env.reset()
 
 if __name__ == "__main__":
-    run_trained_policy()
+    mode = "direct" 
+
+    fpath = f"policies/imitation_env_policies/gail_policy_{mode}.zip"
+    run_trained_gail_policy(fpath)

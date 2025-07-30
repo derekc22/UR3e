@@ -5,11 +5,14 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 from imitation.algorithms.adversarial.airl import AIRL
 from imitation.data import rollout
 from imitation.rewards.reward_nets import BasicRewardNet
-from imitation_env.envs import ImitationEnv
-from imitation_env.collect_demonstrations import load_demonstrations
-from gymnasium.envs.registration import register
+from imitation_env_direct.envs import ImitationEnv
+from imitation_src.collect_demonstrations import load_demonstrations
+# from gymnasium.envs.registration import register
+import register_envs # Import your new registration file
+from stable_baselines3.common.env_util import make_vec_env
 
-def train_airl(expert_trajs):
+
+def train_airl(expert_trajs, mode):
     """
     Trains an AIRL agent.
 
@@ -17,12 +20,14 @@ def train_airl(expert_trajs):
         expert_trajs: A list of expert trajectories.
     """
     # Register the custom environment
-    register(
-        id="imitation_env/ur3e-v0",
-        # entry_point="envs.imitation_env:ImitationEnv"
-        entry_point="envs.imitation_env_direct:ImitationEnv"
+    venv = make_vec_env(
+        env_id=f"imitation_env/{mode}-v0",
+        n_envs=1,
+        env_kwargs={"render_mode": "rgb_array"},
+        # env_kwargs={"render_mode": "human"},
+        vec_env_cls=DummyVecEnv
     )
-
+    
     # Create the vectorized environment
     venv = DummyVecEnv([lambda: ImitationEnv()])
     venv = VecNormalize(venv, norm_obs=True, norm_reward=False, clip_obs=10.)
@@ -49,28 +54,29 @@ def train_airl(expert_trajs):
         demonstrations=transitions,
         demo_batch_size=256,
         gen_replay_buffer_capacity=512,
-        n_disc_updates_per_round=4,
+        n_disc_updates_per_round=40,
         venv=venv,
         gen_algo=generator,
         reward_net=reward_net,
     )
 
     # Train the AIRL agent
-    airl_trainer.train(total_timesteps=4000000)
+    airl_trainer.train(total_timesteps=40000)
 
     # Save the trained policy and reward network
-    airl_trainer.policy.save("policies/imitation_env_policies/airl_policy.zip")
-    torch.save(
-        airl_trainer.reward_train.state_dict(), "policies/imitation_env_policies/airl_reward_net.pt"
-    )
-    print("Saved AIRL policy to policies/imitation_env_policies/airl_policy.zip")
-    print("Saved AIRL reward network to policies/imitation_env_policies/airl_reward_net.pt")
+    airl_trainer.policy.save(f"policies/imitation_env_policies/airl_policy_{mode}.zip")
+    torch.save(airl_trainer.reward_train.state_dict(), f"policies/imitation_env_policies/airl_reward_net_{mode}.pt")
+    print(f"Saved AIRL policy to policies/imitation_env_policies/airl_policy_{mode}.zip")
+    print(f"Saved AIRL reward network to policies/imitation_env_policies/airl_reward_net_{mode}.pt")
 
     return airl_trainer.policy
 
 if __name__ == "__main__":
+    mode = "direct" 
+    
     # Load the expert demonstrations
-    expert_trajectories = load_demonstrations()
+    fpath = f"imitation_src/data/expert_demos_{mode}.pkl"
+    expert_trajectories = load_demonstrations(fpath)
 
     # Train the AIRL agent
-    trained_policy = train_airl(expert_trajectories)
+    trained_policy = train_airl(expert_trajectories, mode)

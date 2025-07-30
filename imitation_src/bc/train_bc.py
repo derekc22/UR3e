@@ -3,34 +3,37 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv
 from imitation.algorithms import bc
 from imitation.data import rollout
-from imitation_env.envs import ImitationEnv
-from imitation_env.collect_demonstrations import load_demonstrations
-from gymnasium.envs.registration import register
+from imitation_env_direct.envs import ImitationEnv
+from imitation_src.collect_demonstrations import load_demonstrations
+# from gymnasium.envs.registration import register
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecNormalize
 from stable_baselines3.common.callbacks import EvalCallback
 import numpy as np
 import torch
+import register_envs # Import your new registration file
+from stable_baselines3.common.env_util import make_vec_env
 
-def train_behavioral_cloning(expert_trajs):
+
+def train_behavioral_cloning(expert_trajs, mode):
     # Register environment
-    register(
-        id="imitation_env/ur3e-v0",
-        # entry_point="envs.imitation_env:ImitationEnv"
-        entry_point="envs.imitation_env_direct:ImitationEnv"
-    )    
-
-    # Create environment
-    # venv = make_vec_env(
-    #     "imitation_env/ur3e-v0",
-    #     n_envs=5,
-    #     env_kwargs={"render_mode": "human"},
-    #     vec_env_cls=DummyVecEnv
+    # register(
+    #     id="imitation_env/ur3e-v0",
+    #     entry_point=f"envs.imitation_env_{mode}:ImitationEnv"
     # )
 
+    # Create environment
+    venv = make_vec_env(
+        env_id=f"imitation_env/{mode}-v0",
+        n_envs=1,
+        env_kwargs={"render_mode": "rgb_array"},
+        # env_kwargs={"render_mode": "human"},
+        vec_env_cls=DummyVecEnv
+    )
+    
     # Create the vectorized environment
-    venv = DummyVecEnv([lambda: ImitationEnv()])
+    # venv = DummyVecEnv([lambda: ImitationEnv()])
     venv = VecNormalize(venv, norm_obs=True, norm_reward=False, clip_obs=10.)
 
 
@@ -62,8 +65,8 @@ def train_behavioral_cloning(expert_trajs):
     bc_trainer.train(n_epochs=10)
     
     # Save trainer
-    bc_trainer.policy.save("policies/imitation_env_policies/bc_policy.zip")
-    print("Saved BC trainer to policies/imitation_env_policies/bc_policy.zip")
+    bc_trainer.policy.save(f"policies/imitation_env_policies/bc_policy_{mode}.zip")
+    print(f"Saved BC trainer to policies/imitation_env_policies/bc_policy_{mode}.zip")
     
     return bc_trainer
 
@@ -89,11 +92,14 @@ def train_behavioral_cloning(expert_trajs):
 #     return success_rate
 
 if __name__ == "__main__":
-    # Load expert demonstrations
-    expert_trajs = load_demonstrations()
+    mode = "direct" 
     
-    # Train Behavioral Cloning
-    bc_trainer = train_behavioral_cloning(expert_trajs)
+    # Load the expert demonstrations
+    fpath = f"imitation_src/data/expert_demos_{mode}.pkl"
+    expert_trajectories = load_demonstrations(fpath)
+
+    # Train the BC agent
+    trained_policy = train_behavioral_cloning(expert_trajectories, mode)
     
     # Evaluate
     # policy = bc_trainer.policy
