@@ -1,0 +1,12 @@
+agent_mode: "indirect"
+device: "mps"
+hyperparameters:
+  clip_obs: 10
+  net_arch:
+    - 256
+    - 256
+  optimizer_lr: 1e-4
+  l2_weight: 1e-4
+  ent_weight: 5e-3
+  batch_size: 256
+  n_epochs: 1

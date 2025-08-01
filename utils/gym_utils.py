@@ -75,8 +75,8 @@ def reset_with_mug(m: mujoco.MjModel,
 #         # "left_spring_link", "right_spring_link",
 #         # "left_follower", "right_follower",
 #         "left_pad", "right_pad",
-#         # "left_pad1", "right_pad1",        # (these are not bodies dumbass)
-#         # "left_pad2", "right_pad2",        # (these are not bodies dumbass)   
+#         # "left_pad1", "right_pad1",        # (these are not bodies)
+#         # "left_pad2", "right_pad2",        # (these are not bodies)   
 #         # "left_silicone_pad", "right_silicone_pad",
 #     }
 #     arm_names = {

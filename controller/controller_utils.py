@@ -89,6 +89,7 @@ def pid_task_ctrl(t: int,
     jac_arm = jac[:, :6]
     
     # Task-space PD force
+    num_ur3e_joints = 6
     kp_pos, kd_pos, ki_pos = pos_gains.values()
     kp_rot, kd_rot, ki_rot = rot_gains.values()
     dt = m.opt.timestep
@@ -102,6 +103,13 @@ def pid_task_ctrl(t: int,
     # Convert from task space to joint space using inverse jacobian (?)
     pos_rot_u = jac_arm.T @ u + d.qfrc_bias[:6]
     grip_u = grip_ctrl(m, traj_target[-1])
+    
+    ctrl_ranges = get_ctrl_ranges(m)[:num_ur3e_joints]
+    u = np.clip(
+        u, 
+        ctrl_ranges[:, 0],  # Lower bounds of ctrl_range
+        ctrl_ranges[:, 1]   # Upper bounds of ctrl_range
+    )
     
     return np.hstack([
         pos_rot_u, 
@@ -128,8 +136,6 @@ def pd_joint_ctrl(t: int,
     theta_delta = joint_delta_func(t, m, d, traj_target, errs)
     
     num_ur3e_joints = 6
-    u = np.zeros((num_ur3e_joints, ))
-    
     kp, kd = gains.values()
 
     # Get current state
@@ -142,14 +148,21 @@ def pd_joint_ctrl(t: int,
     jnt_ranges = get_jnt_ranges(m)[:num_ur3e_joints]
     joint_target_angles = np.clip(
         joint_target_angles, 
-        jnt_ranges[:, 0],  # Lower bounds of joint_range
-        jnt_ranges[:, 1]   # Upper bounds of joint_range
+        jnt_ranges[:, 0],  # Lower bounds of jnt_range
+        jnt_ranges[:, 1]   # Upper bounds of jnt_range
     )
     
     # PD torque calculation
     errs = joint_target_angles - joint_angles
     
     u = kp @ errs + kd @ -joint_vels # pd
+
+    ctrl_ranges = get_ctrl_ranges(m)[:num_ur3e_joints]
+    u = np.clip(
+        u, 
+        ctrl_ranges[:, 0],  # Lower bounds of ctrl_range
+        ctrl_ranges[:, 1]   # Upper bounds of ctrl_range
+    )
 
     return u
 

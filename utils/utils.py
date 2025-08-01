@@ -228,6 +228,10 @@ def get_jnt_ranges(m: mujoco.MjModel) -> np.ndarray:
     return m.jnt_range
 
 
+def get_ctrl_ranges(m: mujoco.MjModel) -> np.ndarray:
+    return m.actuator_ctrlrange
+
+
 def get_children_deep(m: mujoco.MjModel, 
                       parent_id: int) -> list:
     children = []
