@@ -31,7 +31,7 @@ def main():
     # mug   = 7  nq, 6  nv, 0 nu
     # total = 21 nq, 20 nv, 7 nu        
     m, d = load_model(model_path)
-    reset_with_mug(m, d, mode="deterministic", keyframe="down")
+    reset_with_mug(m, d, reset_mode="deterministic", keyframe="down")
 
     init_r = get_site_xrotvec(m, d, "tcp")
     pick = np.hstack([get_mug_xpos(m, d), init_r, 0.5])

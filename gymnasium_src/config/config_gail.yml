@@ -1,6 +1,8 @@
 agent_mode: "indirect"
 device: "auto"
+n_envs: 8
 hyperparameters:
+  clip_obs: 10
   n_steps: 4096
   net_arch:
     - 256

@@ -108,7 +108,7 @@ class ImitationEnvDirect(MujocoEnv):
         return observation, reward, terminated, truncated, info
 
     def reset_model(self):
-        init_qpos, init_qvel = get_init(self.model, mode="stochastic", keyframe="down")
+        init_qpos, init_qvel = get_init(self.model, reset_mode="stochastic", keyframe="down")
         self.set_state(init_qpos, init_qvel)
         self.t = 0
         self.episode += 1

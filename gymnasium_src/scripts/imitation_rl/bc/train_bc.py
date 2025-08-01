@@ -1,27 +1,16 @@
 import gymnasium as gym
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv
 from imitation.algorithms import bc
 from imitation.data import rollout
-from gymnasium_src.scripts.imitation_rl.collect_demonstrations import load_demonstrations
-# from gymnasium.envs.registration import register
+from gymnasium_src.scripts.imitation_rl.collect_demos import load_demos
 from stable_baselines3 import PPO
-from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecNormalize
-from stable_baselines3.common.callbacks import EvalCallback
 import numpy as np
 import torch
 import register_envs # Import your new registration file
-from stable_baselines3.common.env_util import make_vec_env
 import yaml
 
 
 def train_behavioral_cloning(expert_trajs):
-    # Register environment
-    # register(
-    #     id="gymnasium_env/ur3e-v0",
-    #     entry_point=f"envs.imitation_env_{agent_mode}:ImitationEnv"
-    # )
 
     # Create environment
     env = gym.make(
@@ -85,7 +74,7 @@ if __name__ == "__main__":
 
     # Load the expert demonstrations
     demos_fpath = f"gymnasium_src/demos/expert_demos_{agent_mode}.pkl"
-    expert_trajectories = load_demonstrations(demos_fpath)
+    expert_trajectories = load_demos(demos_fpath)
 
     # Train the BC agent
     trained_policy = train_behavioral_cloning(expert_trajectories)

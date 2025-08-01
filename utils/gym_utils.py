@@ -7,7 +7,7 @@ from utils.utils import *
 
 def get_mug_toppled(m: mujoco.MjModel, 
                     d: mujoco.MjData) -> np.ndarray:
-    init_qpos, _ = get_init(m, mode="deterministic", keyframe="home")
+    init_qpos, _ = get_init(m, reset_mode="deterministic", keyframe="home")
     init_mug_z = init_qpos[-5]
     dx, dy, _ = get_body_size(m, "fish")
     # print(get_mug_xpos(m, d)[-1], init_mug_z, max(dx, dy)/2)
@@ -34,17 +34,24 @@ def get_mug_xpos(m: mujoco.MjModel,
 
 
 def get_init(m: mujoco.MjModel, 
-             mode: str,
+             reset_mode: str,
              keyframe: str) -> tuple[np.ndarray, np.ndarray]:
+    
     init_qpos = m.keyframe(keyframe).qpos
     init_qvel = m.keyframe(keyframe).qvel
     
-    if mode == "stochastic":
+    if reset_mode == "stochastic":
         noise = np.hstack([
             np.zeros(m.nq-7), # [0:13]
+            
+            # Data to-date was collected with these presets
             np.random.uniform(low=-0.02, high=0.02, size=1), # x [13:14]
             np.random.uniform(low=-0.4, high=0.3, size=1), # y [13:14]
-            # np.random.uniform(low=-0.02, high=0.02, size=1), # [13:14]
+            
+            # More conservative random placement
+            # np.random.uniform(low=-0.02, high=0.02, size=1), # x [13:14]
+            # np.random.uniform(low=-0.1, high=0.1, size=1), # x [13:14]
+            
             np.zeros(5), # [14:21]
         ])    
         return (init_qpos + noise, init_qvel)
@@ -54,10 +61,10 @@ def get_init(m: mujoco.MjModel,
 
 def reset_with_mug(m: mujoco.MjModel, 
                    d: mujoco.MjData, 
-                   mode: str,
+                   reset_mode: str,
                    keyframe: str) -> None:
 
-    init_qpos, init_qvel = get_init(m, mode=mode, keyframe=keyframe)    
+    init_qpos, init_qvel = get_init(m, reset_mode=reset_mode, keyframe=keyframe)    
     mujoco.mj_resetData(m, d) 
     d.qpos = init_qpos
     d.qvel = init_qvel

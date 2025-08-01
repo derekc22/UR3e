@@ -33,7 +33,7 @@ def run_trained_bc_policy(policy_path):
 
     # 3. Load the weights from the dictionary into the new policy.
     policy.load_state_dict(saved_data["state_dict"])
-    policy.eval()  # Set the policy to evaluation agent_mode
+    policy.eval()  # Set the policy to evaluation mode
     
     obs, _ = env.reset()
     while True:
