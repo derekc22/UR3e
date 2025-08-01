@@ -8,12 +8,12 @@ register(
 
 # 2. Imitation Learning Environment with Indirect Control (PID)
 register(
-    id="imitation_env/indirect-v0",
-    entry_point="imitation_env_indirect.envs.imitation_env:ImitationEnvIndirect",
+    id="gymnasium_env/imitation_indirect-v0",
+    entry_point="gymnasium_env.envs.imitation_env_indirect:ImitationEnvIndirect",
 )
 
 # 3. Imitation Learning Environment with Direct Torque Control
 register(
-    id="imitation_env/direct-v0",
-    entry_point="imitation_env_direct.envs.imitation_env_direct:ImitationEnvDirect",
+    id="gymnasium_env/imitation_direct-v0",
+    entry_point="gymnasium_env.envs.imitation_env_direct:ImitationEnvDirect",
 )

@@ -1,0 +1,14 @@
+agent_mode: "indirect"
+device: "auto"
+hyperparameters:
+  n_steps: 4096
+  net_arch:
+    - 256
+    - 256
+  hid_sizes:
+    - 256 
+    - 256
+  demo_batch_size: 1024
+  gen_replay_buffer_capacity: 8192
+  n_disc_updates_per_round: 4
+  total_timesteps: 2000000

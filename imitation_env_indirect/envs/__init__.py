@@ -1,1 +1,0 @@
-from imitation_env_indirect.envs.imitation_env_indirect import ImitationEnvIndirect

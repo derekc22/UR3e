@@ -1,1 +1,3 @@
 from gymnasium_env.envs.ur3e_env import UR3eEnv
+from gymnasium_env.envs.imitation_env_direct import ImitationEnvDirect
+from gymnasium_env.envs.imitation_env_indirect import ImitationEnvIndirect
