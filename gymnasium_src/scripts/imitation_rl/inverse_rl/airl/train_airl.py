@@ -5,8 +5,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, SubprocV
 from imitation.algorithms.adversarial.airl import AIRL
 from imitation.data import rollout
 from imitation.rewards.reward_nets import BasicRewardNet
-from gymnasium_src.scripts.imitation_rl.collect_demonstrations import load_demonstrations
-# from gymnasium.envs.registration import register
+from gymnasium_src.scripts.imitation_rl.collect_demos import load_demos
 import register_envs # Import your new registration file
 from stable_baselines3.common.env_util import make_vec_env
 import yaml
@@ -21,14 +20,13 @@ def train_airl(expert_trajs):
     # Register the custom environment
     venv = make_vec_env(
         env_id=f"gymnasium_env/imitation_{agent_mode}-v0",
-        n_envs=8,
+        n_envs=n_envs,
         env_kwargs={"render_mode": "rgb_array"},
         # env_kwargs={"render_mode": "human"},
-        vec_env_cls=DummyVecEnv
+        vec_env_cls=SubprocVecEnv
     )
     
     # Create the vectorized environment
-    # venv = DummyVecEnv([lambda: ImitationEnv()])
     venv = VecNormalize(venv, norm_obs=True, norm_reward=False, clip_obs=clip_obs)
 
     # Convert trajectories to transitions, which is the format required by the AIRL trainer
@@ -73,8 +71,9 @@ if __name__ == "__main__":
     with open("gymnasium_src/config/config_airl.yml", "r") as f:  yml = yaml.safe_load(f)    
     agent_mode = yml["agent_mode"]
     device = yml["device"]
+    n_envs = yml["n_envs"]
     hyperparameters = yml["hyperparameters"]
-    clip_obs = yml["clip_obs"]
+    clip_obs = hyperparameters["clip_obs"]
     net_arch = hyperparameters["net_arch"]
     n_steps = hyperparameters["n_steps"]
     hid_sizes = hyperparameters["hid_sizes"]
@@ -85,7 +84,7 @@ if __name__ == "__main__":
     
     # Load the expert demonstrations
     demos_fpath = f"gymnasium_src/demos/expert_demos_{agent_mode}.pkl"
-    expert_trajectories = load_demonstrations(demos_fpath)
+    expert_trajectories = load_demos(demos_fpath)
 
     # Train the AIRL agent
     trained_policy = train_airl(expert_trajectories)

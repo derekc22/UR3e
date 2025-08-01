@@ -207,7 +207,7 @@ class UR3eEnv(MujocoEnv):
 
 
     def reset_model(self):
-        init_qpos, init_qvel = get_init(self.model, mode="deterministic", keyframe="down")
+        init_qpos, init_qvel = get_init(self.model, reset_mode="deterministic", keyframe="down")
         self.set_state(init_qpos, init_qvel)
 
         # stop = np.hstack([get_mug_xpos(self.model, self.data), [0, 0, 0]])

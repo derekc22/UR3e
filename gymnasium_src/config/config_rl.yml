@@ -1,0 +1,12 @@
+n_envs: 8
+hyperparameters:
+  eval_freq: 5000
+  learning_rate: 3e-4
+  n_steps: 4096
+  batch_size: 128
+  n_epochs: 30
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  ent_coef: 0.01
+  total_timesteps: 100000

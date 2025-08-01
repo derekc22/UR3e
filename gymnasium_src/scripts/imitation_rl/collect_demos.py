@@ -43,7 +43,7 @@ def collect_expert_demonstrations(num_demos):
     for demo in range(num_demos):
         print(f"Collecting {agent_mode} demonstration {demo+1}/{num_demos}")
         m, d = load_model(model_path)
-        reset_with_mug(m, d, agent_mode="stochastic", keyframe="down")
+        reset_with_mug(m, d, reset_mode="stochastic", keyframe="down")
 
         if visualize:
             viewer = mujoco.viewer.launch_passive(m, d)
@@ -124,7 +124,7 @@ def collect_expert_demonstrations(num_demos):
     return trajectories
     
 
-def save_demonstrations(trajectories, save_path):
+def save_demos(trajectories, save_path):
     """Append demonstrations to a pickle file by loading, extending, and overwriting."""
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
@@ -145,7 +145,7 @@ def save_demonstrations(trajectories, save_path):
 
 
 
-def load_demonstrations(load_fpath):
+def load_demos(load_fpath):
     """Load expert trajectories from a file using pickle."""
     with open(load_fpath, "rb") as f:
         trajectories = pkl.load(f)
@@ -154,13 +154,13 @@ def load_demonstrations(load_fpath):
 
 
 if __name__ == "__main__":
-    with open("gymnasium_src/config/.yml", "r") as f:  yml = yaml.safe_load(f)    
-        
-    visualize = False
-    agent_mode = yml["agent_mode"]
-    num_demos = 500
+    with open("gymnasium_src/config/settings.yml", "r") as f:  yml = yaml.safe_load(f)
+    settings = yml["collect_demos.py"]    
+    agent_mode = settings["agent_mode"]
+    num_demos = settings["num_demos"]
+    visualize = settings["visualize"]
 
     # Collect and save demonstrations
     demos_fpath = f"gymnasium_src/demos/expert_demos_{agent_mode}.pkl"
     expert_trajs = collect_expert_demonstrations(num_demos)
-    save_demonstrations(expert_trajs, demos_fpath)
+    save_demos(expert_trajs, demos_fpath)

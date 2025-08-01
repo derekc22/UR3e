@@ -5,9 +5,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, SubprocV
 from imitation.algorithms.adversarial.gail import GAIL
 from imitation.data import rollout
 from imitation.rewards.reward_nets import BasicRewardNet
-# from imitation_env_direct.envs.imitation_env_direct import ImitationEnvDirect
-# from imitation_env_indirect.envs.imitation_env_indirect import ImitationEnvIndirect
-from gymnasium_src.scripts.imitation_rl.collect_demonstrations import load_demonstrations
+from gymnasium_src.scripts.imitation_rl.collect_demos import load_demos
 from gymnasium.envs.registration import register
 import register_envs # Import your new registration file
 from stable_baselines3.common.env_util import make_vec_env
@@ -24,14 +22,13 @@ def train_gail(expert_trajs):
     # Create environment
     venv = make_vec_env(
         env_id=f"gymnasium_env/imitation_{agent_mode}-v0",
-        n_envs=8,
+        n_envs=n_envs,
         env_kwargs={"render_mode": "rgb_array"},
         # env_kwargs={"render_mode": "human"},
         vec_env_cls=SubprocVecEnv
     )
     
     # Create the vectorized environment
-    # venv = DummyVecEnv([lambda: ImitationEnv()])
     venv = VecNormalize(venv, norm_obs=True, norm_reward=False, clip_obs=clip_obs)
 
     # Convert trajectories to transitions, the format required by the GAIL trainer
@@ -71,11 +68,12 @@ def train_gail(expert_trajs):
     return gail_trainer.policy
 
 if __name__ == "__main__":
-    with open("gymnasium_src/config/.yml", "r") as f:  yml = yaml.safe_load(f)    
+    with open("gymnasium_src/config/config_gail.yml", "r") as f:  yml = yaml.safe_load(f)    
     agent_mode = yml["agent_mode"]
     device = yml["device"]
+    n_envs = yml["n_envs"]
     hyperparameters = yml["hyperparameters"]
-    clip_obs = yml["clip_obs"]
+    clip_obs = hyperparameters["clip_obs"]
     net_arch = hyperparameters["net_arch"]
     n_steps = hyperparameters["n_steps"]
     hid_sizes = hyperparameters["hid_sizes"]
@@ -86,7 +84,7 @@ if __name__ == "__main__":
     
     # Load the expert demonstrations
     demos_fpath = f"gymnasium_src/demos/expert_demos_{agent_mode}.pkl"
-    expert_trajectories = load_demonstrations(demos_fpath)
+    expert_trajectories = load_demos(demos_fpath)
 
     # Train the GAIL agent
     trained_policy = train_gail(expert_trajectories)
