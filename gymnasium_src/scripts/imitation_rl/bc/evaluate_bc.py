@@ -6,6 +6,8 @@ import register_envs # Import your new registration file
 from stable_baselines3.common.env_util import make_vec_env
 import gymnasium as gym
 import yaml
+from gymnasium.wrappers import FrameStackObservation
+
 
 def run_trained_bc_policy(policy_path):
     """
@@ -24,6 +26,16 @@ def run_trained_bc_policy(policy_path):
     # 1. Create a policy with the same architecture as the trained one.
     # We do this by creating a dummy PPO agent and extracting its policy.
     policy_kwargs = dict(net_arch=net_arch)
+    
+    if feature_encoder == "transformer":
+        from gymnasium_src.feature_extractors.transformer import TransformerFeatureExtractor
+        env = FrameStackObservation(env, stack_size=history_len)
+        
+        policy_kwargs.update(dict(
+            features_extractor_class=TransformerFeatureExtractor,
+            features_extractor_kwargs=dict(features_dim=256), # Output dimension of the transformer
+        ))
+        
     policy = PPO("MlpPolicy", env, policy_kwargs=policy_kwargs).policy
 
     # 2. Load the saved data dictionary.
@@ -49,6 +61,8 @@ if __name__ == "__main__":
     agent_mode = yml["agent_mode"]
     hyperparameters = yml["hyperparameters"]
     net_arch = hyperparameters["net_arch"]
-
+    feature_encoder = hyperparameters.get("feature_encoder")
+    history_len = hyperparameters.get("history_len")
+    
     policy_fpath = f"policies/imitation_rl_policies/bc_policy_{agent_mode}.zip"
     run_trained_bc_policy(policy_fpath)

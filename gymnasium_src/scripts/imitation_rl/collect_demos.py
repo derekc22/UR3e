@@ -16,6 +16,49 @@ import pickle as pkl
 import time
 
 
+from collections import deque
+from imitation.data.types import Trajectory
+
+def stack_expert_trajectories(trajectories, k_history):
+    """
+    Manually applies frame stacking to a list of expert trajectories
+    using a deque for efficiency.
+
+    :param trajectories: A list of trajectories with unstacked observations.
+    :param k_history: The number of frames to stack.
+    :return: A new list of trajectories with stacked observations.
+    """
+    new_trajectories = []
+    for traj in trajectories:
+        stacked_obs = []
+        # Initialize a deque with a fixed length to hold the history
+        history = deque(maxlen=k_history)
+
+        for i, obs in enumerate(traj.obs):
+            if i == 0:
+                # For the very first frame, pad the history by repeating it
+                for _ in range(k_history):
+                    history.append(obs)
+            else:
+                # For all subsequent frames, just add the new one
+                # The deque automatically discards the oldest
+                history.append(obs)
+            
+            # The current state of the deque is the stacked observation
+            stacked_obs.append(np.array(history))
+
+        # Create a new trajectory with the processed observations
+        new_traj = Trajectory(
+            obs=np.array(stacked_obs),
+            acts=traj.acts,
+            infos=traj.infos,
+            terminal=traj.terminal,
+        )
+        new_trajectories.append(new_traj)
+        
+    return new_trajectories
+
+
 def get_obs(m, d):
     return np.hstack([
         get_2f85_xpos(m, d), # 3 dim

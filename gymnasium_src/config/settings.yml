@@ -1,4 +1,4 @@
 collect_demos.py:
-  agent_mode: "indirect"
-  num_demos: 500
-  visualize: True
+  agent_mode: "direct"
+  num_demos: 10
+  visualize: False
