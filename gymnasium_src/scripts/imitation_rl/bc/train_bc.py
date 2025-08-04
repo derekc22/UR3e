@@ -8,14 +8,28 @@ import numpy as np
 import torch
 import register_envs # Import your new registration file
 import yaml
+from gymnasium.wrappers import FrameStackObservation
+
 
 
 def train_behavioral_cloning(expert_trajs):
 
     # Create environment
-    env = gym.make(
-        id=f"gymnasium_env/imitation_{agent_mode}-v0",
-    )
+    env = gym.make(id=f"gymnasium_env/imitation_{agent_mode}-v0")
+    
+    policy_kwargs = dict(net_arch=net_arch)
+    
+    if feature_encoder == "transformer":
+        from gymnasium_src.feature_extractors.transformer import TransformerFeatureExtractor
+        env = FrameStackObservation(env, stack_size=history_len)
+        
+        policy_kwargs.update(dict(
+            features_extractor_class=TransformerFeatureExtractor,
+            features_extractor_kwargs=dict(features_dim=256), # Output dimension of the transformer
+        ))
+        
+        from gymnasium_src.scripts.imitation_rl.collect_demos import stack_expert_trajectories
+        expert_trajs = stack_expert_trajectories(expert_trajs, history_len)
     
     # Convert trajectories to transitions
     transitions = rollout.flatten_trajectories(expert_trajs)
@@ -30,7 +44,6 @@ def train_behavioral_cloning(expert_trajs):
             dones=transitions.dones,
         )
 
-    policy_kwargs = dict(net_arch=net_arch)
     policy = PPO("MlpPolicy", env, policy_kwargs=policy_kwargs).policy
     
     bc_trainer = bc.BC(
@@ -65,12 +78,14 @@ if __name__ == "__main__":
     agent_mode = yml["agent_mode"]
     device = yml["device"]
     hyperparameters = yml["hyperparameters"]
-    net_arch = hyperparameters["net_arch"]
-    optimizer_lr = float(hyperparameters["optimizer_lr"])
-    l2_weight = float(hyperparameters["l2_weight"])
-    ent_weight = float(hyperparameters["ent_weight"])
-    batch_size = hyperparameters["batch_size"]
-    n_epochs = hyperparameters["n_epochs"]
+    net_arch = hyperparameters.get("net_arch")
+    optimizer_lr = float(hyperparameters.get("optimizer_lr"))
+    l2_weight = float(hyperparameters.get("l2_weight"))
+    ent_weight = float(hyperparameters.get("ent_weight"))
+    batch_size = hyperparameters.get("batch_size")
+    n_epochs = hyperparameters.get("n_epochs")
+    feature_encoder = hyperparameters.get("feature_encoder")
+    history_len = hyperparameters.get("history_len")
 
     # Load the expert demonstrations
     demos_fpath = f"gymnasium_src/demos/expert_demos_{agent_mode}.pkl"

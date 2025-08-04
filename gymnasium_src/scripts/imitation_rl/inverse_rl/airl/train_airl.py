@@ -9,6 +9,8 @@ from gymnasium_src.scripts.imitation_rl.collect_demos import load_demos
 import register_envs # Import your new registration file
 from stable_baselines3.common.env_util import make_vec_env
 import yaml
+from gymnasium.wrappers import FrameStack
+
 
 def train_airl(expert_trajs):
     """
@@ -23,7 +25,9 @@ def train_airl(expert_trajs):
         n_envs=n_envs,
         env_kwargs={"render_mode": "rgb_array"},
         # env_kwargs={"render_mode": "human"},
-        vec_env_cls=SubprocVecEnv
+        vec_env_cls=SubprocVecEnv,
+        wrapper_class=FrameStack,
+        wrapper_kwargs=dict(num_stack=history_len)
     )
     
     # Create the vectorized environment
@@ -81,6 +85,7 @@ if __name__ == "__main__":
     gen_replay_buffer_capacity = hyperparameters["gen_replay_buffer_capacity"]
     n_disc_updates_per_round = hyperparameters["n_disc_updates_per_round"]
     total_timesteps = hyperparameters["total_timesteps"]
+    history_len = hyperparameters.get("history_len")
     
     # Load the expert demonstrations
     demos_fpath = f"gymnasium_src/demos/expert_demos_{agent_mode}.pkl"

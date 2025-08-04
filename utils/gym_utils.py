@@ -46,7 +46,7 @@ def get_init(m: mujoco.MjModel,
             
             # Data to-date was collected with these presets
             np.random.uniform(low=-0.02, high=0.02, size=1), # x [13:14]
-            np.random.uniform(low=-0.4, high=0.3, size=1), # y [13:14]
+            np.random.uniform(low=-0.4, high=0.25, size=1), # y [13:14]
             
             # More conservative random placement
             # np.random.uniform(low=-0.02, high=0.02, size=1), # x [13:14]

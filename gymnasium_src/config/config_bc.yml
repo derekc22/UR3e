@@ -8,4 +8,6 @@ hyperparameters:
   l2_weight: 1e-4
   ent_weight: 5e-3
   batch_size: 512
-  n_epochs: 5
+  n_epochs: 10
+  feature_encoder: "transformer"
+  history_len: 5
