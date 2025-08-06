@@ -35,7 +35,7 @@ class ImitationEnvIndirect(MujocoEnv):
         self.episode = 0
         self.t = 0
         
-        obs_dim = 13  # Same as before: [gripper_pos, block_pos, target_pos, grasp_state, pad_pos]
+        obs_dim = 25 
         observation_space = spaces.Box(
             low=-np.inf,
             high=np.inf,
@@ -51,8 +51,12 @@ class ImitationEnvIndirect(MujocoEnv):
         )
         
         # Action space: [x, y, z, grip] (same as before)
-        low = np.array([0.28799994, 0.13349916, 0.005, 0])
-        high = np.array([0.35799994, 0.35349916, 0.165, 1])
+        x_mug_init, y_mug_init, _ = get_init_mug_xpos(self.model, "down")
+        low  = np.array([x_mug_init + -0.25, y_mug_init + -0.25, 0.0, 0])
+        high = np.array([x_mug_init +  0.25, y_mug_init +  0.25, 0.5, 1])
+        # default mug pos = [0.29799994 0.13349916 0.055111]
+        # low  = np.array([0.29799994 + -0.02, 0.13349916 + -0.4, 0.005, 0])
+        # high = np.array([0.29799994 +  0.02, 0.13349916 + 0.25, 0.165, 1])
         self.action_space = spaces.Box(
             low=low, 
             high=high, 
@@ -86,9 +90,10 @@ class ImitationEnvIndirect(MujocoEnv):
         # Step simulation
         self.do_simulation(u, self.frame_skip)
         observation = self._get_obs()
+        # print(observation[9])
         
         # Simple reward for demonstration purposes
-        # Supposedly, these rewards are not used by the imitation library during gail or airl
+        # User-specified rewards are not used by the imitation library during gail or airl
         # They are overridden by the learned reward function. Thus, a placeholder of -1 is used here
         # reward = -np.linalg.norm(observation[3:6] - observation[6:9])  # Distance between mug and target
         reward = -1 
@@ -105,7 +110,7 @@ class ImitationEnvIndirect(MujocoEnv):
         return observation, reward, terminated, truncated, info
 
     def reset_model(self):
-        init_qpos, init_qvel = get_init(self.model, reset_mode="stochastic", keyframe="down")
+        init_qpos, init_qvel = get_init(self.model, reset_mode="stochastic", keyframe="down", noise_mag="high")
         self.set_state(init_qpos, init_qvel)
         self.t = 0
         self.episode += 1
@@ -121,30 +126,17 @@ class ImitationEnvIndirect(MujocoEnv):
             get_2f85_xpos(self.model, self.data),  # 3 dim
             get_mug_xpos(self.model, self.data),    # 3 dim
             get_ghost_xpos(self.model, self.data),  # 3 dim 
-            get_block_grasp_state(self.model, self.data),  # 1 dim
-            # get_site_xpos(self.model, self.data, "right_pad1_site"),  # 3 dim
-            get_site_velp(self.model, self.data, "tcp") # 3 dim
+            get_robust_block_grasp_state(self.model, self.data),  # 1 dim
+            get_2f85_xvel(self.model, self.data), # 3 dim
+            get_ur3e_qpos(self.data), # 6 dim
+            get_ur3e_qvel(self.data), # 6 dim
         ])
 
     def _check_termination(self, observation):
-        # gripper_xpos = observation[:3]   # End-effector position
-        # mug_xpos = observation[3:6]      # Mug position
-        # ghost_xpos = observation[6:9]    # Target position
-        
-        # place_threshold = 0.005
-        # d_place = np.linalg.norm(mug_xpos - ghost_xpos)
-        
-        # if d_place < place_threshold:
-        #     return True
-        # if get_self_collision(self.model, self.data, self.collision_cache):
-        #     return True
-        # if get_mug_toppled(self.model, self.data):
-        #     return True
-        
         # The imitation library prefers fixed-horizon episodes.
         # Termination signals can leak information about the reward.
         # All episodes should run until the time limit is reached.
         return False
 
     def _check_truncation(self):
-        return self.t >= 1200 #500  # 1000 steps max
+        return self.t >= 2500 #500  # 1000 steps max

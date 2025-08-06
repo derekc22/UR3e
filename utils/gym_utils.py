@@ -33,42 +33,57 @@ def get_mug_xpos(m: mujoco.MjModel,
     return get_site_xpos(m, d, "handle_site")
 
 
+def get_init_mug_xpos(m: mujoco.MjModel,
+                      keyframe: str) -> np.ndarray:
+    mug_x_pos_init, _ = get_init(m, "deterministic", keyframe)
+    return mug_x_pos_init[14:17]
+
+
+def get_mug_xpos_noise(noise_mag: str) -> np.ndarray:
+    if noise_mag == "high":
+        x_bounds, y_bounds = ([-0.02, 0.02], [-0.25, 0.2])
+    elif noise_mag == "med":
+        x_bounds, y_bounds = ([-0.02, 0.02], [-0.2, 0.1])
+    elif noise_mag == "low":
+        x_bounds, y_bounds = ([-0.02, 0.02], [-0.1, 0.01])
+        
+    return np.hstack([
+        np.random.uniform(low=x_bounds[0], high=x_bounds[1], size=1), # x [14:15]
+        np.random.uniform(low=y_bounds[0], high=y_bounds[1], size=1)  # y [15:16]
+    ]) 
+
+
 def get_init(m: mujoco.MjModel, 
              reset_mode: str,
-             keyframe: str) -> tuple[np.ndarray, np.ndarray]:
+             keyframe: str,
+             noise_mag: str = None) -> tuple[np.ndarray, np.ndarray]:
     
     init_qpos = m.keyframe(keyframe).qpos
     init_qvel = m.keyframe(keyframe).qvel
     
     if reset_mode == "stochastic":
         noise = np.hstack([
-            np.zeros(m.nq-7), # [0:13]
-            
-            # Data to-date was collected with these presets
-            np.random.uniform(low=-0.02, high=0.02, size=1), # x [13:14]
-            np.random.uniform(low=-0.4, high=0.25, size=1), # y [13:14]
-            
-            # More conservative random placement
-            # np.random.uniform(low=-0.02, high=0.02, size=1), # x [13:14]
-            # np.random.uniform(low=-0.1, high=0.1, size=1), # x [13:14]
-            
-            np.zeros(5), # [14:21]
+            np.zeros(m.nq-7), # [0:14]
+            get_mug_xpos_noise(noise_mag), # [14:16]
+            np.zeros(5), # [16:22]
         ])    
-        return (init_qpos + noise, init_qvel)
+        return init_qpos + noise, init_qvel
     
-    return (init_qpos, init_qvel)
+    return init_qpos, init_qvel
 
 
 def reset_with_mug(m: mujoco.MjModel, 
                    d: mujoco.MjData, 
                    reset_mode: str,
-                   keyframe: str) -> None:
+                   keyframe: str,
+                   noise_mag: str = None) -> None:
 
-    init_qpos, init_qvel = get_init(m, reset_mode=reset_mode, keyframe=keyframe)    
+    init_qpos, init_qvel = get_init(m, reset_mode, keyframe, noise_mag)    
     mujoco.mj_resetData(m, d) 
     d.qpos = init_qpos
     d.qvel = init_qvel
-    mujoco.mj_step(m, d)
+    # mujoco.mj_step(m, d)
+    mujoco.mj_forward(m, d)
 
 
 
@@ -120,6 +135,16 @@ def reset_with_mug(m: mujoco.MjModel,
 #             return 1
 #     return 0
 
+
+def get_robust_block_grasp_state(m: mujoco.MjModel, 
+                                 d: mujoco.MjData) -> int:
+    grasp_state = get_block_grasp_state(m, d)
+    diffs = np.abs(get_2f85_xpos(m, d) - get_mug_xpos(m, d))
+    
+    if grasp_state == 2 and all(diffs < [0.01, 0.005, 0.05]):
+        return 1
+    
+    return 0
 
 def get_block_grasp_state(m: mujoco.MjModel, 
                           d: mujoco.MjData) -> int:

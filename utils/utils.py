@@ -20,7 +20,8 @@ def reset(m: mujoco.MjModel,
     mujoco.mj_resetData(m, d) 
     d.qpos = init_qpos
     d.qvel = init_qvel
-    mujoco.mj_step(m, d)
+    # mujoco.mj_step(m, d)
+    mujoco.mj_forward(m, d)
 
 
 ###################### BODY, SITE, JOINT ID/NAME ############################
@@ -272,3 +273,7 @@ def get_robot_qvel(d: mujoco.MjData) -> np.ndarray:
 def get_2f85_xpos(m: mujoco.MjModel,
                   d: mujoco.MjData) -> np.ndarray:
     return get_site_xpos(m, d, "tcp")
+
+def get_2f85_xvel(m: mujoco.MjModel,
+                  d: mujoco.MjData) -> np.ndarray:
+    return get_site_velp(m, d, "tcp")

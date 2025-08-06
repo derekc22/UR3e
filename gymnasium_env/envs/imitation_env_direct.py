@@ -35,7 +35,7 @@ class ImitationEnvDirect(MujocoEnv):
         self.episode = 0
         self.t = 0
         
-        obs_dim = 13  # Same as before: [gripper_pos, block_pos, target_pos, grasp_state, pad_pos]
+        obs_dim = 13
         observation_space = spaces.Box(
             low=-np.inf,
             high=np.inf,
@@ -91,7 +91,7 @@ class ImitationEnvDirect(MujocoEnv):
         observation = self._get_obs()
         
         # Simple reward for demonstration purposes
-        # Supposedly, these rewards are not used by the imitation library during gail or airl
+        # User-specified rewards are not used by the imitation library during gail or airl
         # They are overridden by the learned reward function. Thus, a placeholder of -1 is used here
         # reward = -np.linalg.norm(observation[3:6] - observation[6:9])  # Distance between mug and target
         reward = -1 
@@ -129,21 +129,7 @@ class ImitationEnvDirect(MujocoEnv):
             get_site_velp(self.model, self.data, "tcp") # 3 dim
         ])
 
-    def _check_termination(self, observation):
-        # gripper_xpos = observation[:3]   # End-effector position
-        # mug_xpos = observation[3:6]      # Mug position
-        # ghost_xpos = observation[6:9]    # Target position
-        
-        # place_threshold = 0.005
-        # d_place = np.linalg.norm(mug_xpos - ghost_xpos)
-        
-        # if d_place < place_threshold:
-        #     return True
-        # if get_self_collision(self.model, self.data, self.collision_cache):
-        #     return True
-        # if get_mug_toppled(self.model, self.data):
-        #     return True
-        
+    def _check_termination(self, observation):        
         # The imitation library prefers fixed-horizon episodes.
         # Termination signals can leak information about the reward.
         # All episodes should run until the time limit is reached.
