@@ -38,10 +38,9 @@ def main():
     place = np.hstack([get_ghost_xpos(m, d), init_r, 1])
     # place = np.hstack([ place[:2], place[2] + get_body_size(m, "ghost")[-1]/2, place[3:] ])
     
-    # build_traj_l_pick_move_place(get_task_space_state(m, d), [pick, place], hold, trajectory_fpath)
-    # traj_target = load_trajectory(trajectory_fpath)
-
     build_traj_l_pick_place(get_task_space_state(m, d), [pick, place], hold, trajectory_fpath)
+    # build_traj_l_pick_move_place(get_task_space_state(m, d), [pick, place], hold, trajectory_fpath)
+    
     traj_target = load_trajectory(trajectory_fpath)
     
     T = traj_target.shape[0]

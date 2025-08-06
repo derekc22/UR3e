@@ -9,7 +9,6 @@ import torch
 import register_envs # Import your new registration file
 import yaml
 from gymnasium.wrappers import FrameStackObservation
-import os
 
 
 
@@ -21,9 +20,9 @@ def train_behavioral_cloning(expert_trajs):
     policy_kwargs = dict(net_arch=net_arch)
     
     if feature_encoder == "transformer":
+        from gymnasium_src.feature_extractors.transformer import TransformerFeatureExtractor
         env = FrameStackObservation(env, stack_size=history_len)
         
-        from gymnasium_src.feature_extractors.transformer import TransformerFeatureExtractor
         policy_kwargs.update(dict(
             features_extractor_class=TransformerFeatureExtractor,
             features_extractor_kwargs=dict(features_dim=256), # Output dimension of the transformer
@@ -35,16 +34,18 @@ def train_behavioral_cloning(expert_trajs):
     # Convert trajectories to transitions
     transitions = rollout.flatten_trajectories(expert_trajs)
     
-    policy = PPO("MlpPolicy", env, policy_kwargs=policy_kwargs, device=device).policy
-    
-    save_dir = "policies/imitation_rl_policies"
-    policy_path = f"{save_dir}/bc_policy_{agent_mode}.zip"
-    
-    if os.path.exists(policy_path) and resume:
-        print(f"Loading existing policy from {policy_path}")
-        saved_data = torch.load(policy_path, weights_only=False)
-        policy.load_state_dict(saved_data["state_dict"])
+    if device == "mps":
+        from imitation.data.types import Transitions
+        transitions = Transitions(
+            obs=transitions.obs.astype(np.float32),
+            acts=transitions.acts.astype(np.float32),
+            infos=transitions.infos,
+            next_obs=transitions.next_obs.astype(np.float32),
+            dones=transitions.dones,
+        )
 
+    policy = PPO("MlpPolicy", env, policy_kwargs=policy_kwargs).policy
+    
     bc_trainer = bc.BC(
         observation_space=env.observation_space,
         action_space=env.action_space,
@@ -64,9 +65,9 @@ def train_behavioral_cloning(expert_trajs):
     bc_trainer.train(n_epochs=n_epochs)
     
     # Save trainer
-    os.makedirs(save_dir, exist_ok=True)
-    bc_trainer.policy.save(policy_path)
-    print(f"Saved BC trainer to {policy_path}")
+    save_dir = "policies/imitation_rl_policies"
+    bc_trainer.policy.save(f"{save_dir}/bc_policy_{agent_mode}.zip")
+    print(f"Saved BC trainer to {save_dir}/bc_policy_{agent_mode}.zip")
     
     return bc_trainer
 
@@ -76,7 +77,6 @@ if __name__ == "__main__":
     with open("gymnasium_src/config/config_bc.yml", "r") as f:  yml = yaml.safe_load(f)    
     agent_mode = yml["agent_mode"]
     device = yml["device"]
-    resume = yml["resume"]
     hyperparameters = yml["hyperparameters"]
     net_arch = hyperparameters.get("net_arch")
     optimizer_lr = float(hyperparameters.get("optimizer_lr"))

@@ -1,4 +1,8 @@
 collect_demos.py:
-  agent_mode: "direct"
-  num_demos: 10
+  agent_mode: "indirect"
+  resume: False
+  num_demos: 300
   visualize: False
+  reset_mode: "stochastic"
+  noise_mag: "high"
+  down_sample: 120

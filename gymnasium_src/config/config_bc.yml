@@ -1,13 +1,14 @@
 agent_mode: "indirect"
-device: "mps"
+device: "cpu"
+resume: False
 hyperparameters:
   net_arch:
-    - 256
-    - 256
-  optimizer_lr: 1e-4
+    - 1028
+    - 1028
+  optimizer_lr: 3e-4
   l2_weight: 1e-4
-  ent_weight: 5e-3
-  batch_size: 512
+  ent_weight: 1e-3
+  batch_size: 10
   n_epochs: 10
   feature_encoder: "transformer"
   history_len: 5

@@ -53,7 +53,7 @@ class TransformerFeatureExtractor(BaseFeaturesExtractor):
         
         # The observation space shape from FrameStack is (k, num_features)
         # We need the number of features for a single frame.
-        self.k_history, single_frame_features = observation_space.shape
+        self.history_len, single_frame_features = observation_space.shape
         
         # Input embedding layer
         self.embedding = nn.Linear(single_frame_features, d_model)
@@ -77,24 +77,22 @@ class TransformerFeatureExtractor(BaseFeaturesExtractor):
         )
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
-        # observations shape: (batch_size, k_history, single_frame_features)
+        # observations shape: (batch_size, history_len, single_frame_features)
         
         # Embed each frame in the sequence
-        # -> (batch_size, k_history, d_model)
+        # -> (batch_size, history_len, d_model)
         embedded = self.embedding(observations)
         
         # Add positional information
-        # -> (batch_size, k_history, d_model)
+        # -> (batch_size, history_len, d_model)
         with_pos = self.pos_encoder(embedded)
 
-        # ** 2. NO LONGER NEED unsqueeze(1) **
         # Pass the full sequence through the transformer
-        # -> (batch_size, k_history, d_model)
+        # -> (batch_size, history_len, d_model)
         transformer_output = self.transformer_encoder(with_pos)
         
         # ** 3. EXTRACT FEATURES FROM THE SEQUENCE **
-        # We take the output corresponding to the most recent frame (-1)
-        # as the representative feature for the whole sequence.
+        # We take the output corresponding to the most recent frame (-1) as the representative feature for the whole sequence.
         # -> (batch_size, d_model)
         last_frame_features = transformer_output[:, -1, :]
         
