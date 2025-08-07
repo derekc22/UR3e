@@ -6,6 +6,5 @@
 ur3e_tensorboard/*
 controller/logs
 controller/data
-policies/regular_rl_policies/archive/*
 gymnasium_src/demos/*
 policies/*

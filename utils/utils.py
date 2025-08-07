@@ -41,6 +41,11 @@ def get_joint_id(m: mujoco.MjModel,
     return mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, joint)
 
 
+def get_joint_name(m: mujoco.MjModel, 
+                   id: str) -> int:
+    return mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_JOINT, id)
+
+
 def get_body_name(m: mujoco.MjModel,
                   id: int) -> str:
     return mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, id)
@@ -274,6 +279,23 @@ def get_2f85_xpos(m: mujoco.MjModel,
                   d: mujoco.MjData) -> np.ndarray:
     return get_site_xpos(m, d, "tcp")
 
-def get_2f85_xvel(m: mujoco.MjModel,
-                  d: mujoco.MjData) -> np.ndarray:
+def get_2f85_xvelp(m: mujoco.MjModel,
+                   d: mujoco.MjData) -> np.ndarray:
     return get_site_velp(m, d, "tcp")
+
+def get_fingers_rel_dist(m: mujoco.MjModel,
+                         d: mujoco.MjData) -> np.ndarray:
+    return np.linalg.norm(
+        get_site_xpos(m, d, "left_pad1_site") - 
+        get_site_xpos(m, d, "right_pad1_site")
+    )
+
+def get_finger_jnt_disp(d: mujoco.MjData) -> np.ndarray:
+    # 6 = "right_spring_link", 10 = "left_spring_link" 
+    # Assume initial qpos = 0 for these joints
+    # return np.array([d.qpos[6], d.qpos[10]])
+    return d.qpos[6] # rad
+
+def get_finger_jnt_vel(d: mujoco.MjData) -> np.ndarray:
+    # 6 = "right_spring_link", 10 = "left_spring_link" 
+    return d.qvel[6] # rad/s

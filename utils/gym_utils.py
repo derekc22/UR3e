@@ -32,6 +32,10 @@ def get_mug_xpos(m: mujoco.MjModel,
                  d: mujoco.MjData) -> np.ndarray:
     return get_site_xpos(m, d, "handle_site")
 
+def get_mug_xvelp(m: mujoco.MjModel, 
+                  d: mujoco.MjData) -> np.ndarray:
+    return get_site_velp(m, d, "handle_site")
+
 
 def get_init_mug_xpos(m: mujoco.MjModel,
                       keyframe: str) -> np.ndarray:
@@ -86,54 +90,6 @@ def reset_with_mug(m: mujoco.MjModel,
     mujoco.mj_forward(m, d)
 
 
-
-
-
-
-# def init_collision_cache(m: mujoco.MjModel) -> tuple:
-#     # ---------- names you may need to update when renaming ------------
-#     gripper_names = {
-#         # "left_driver", "right_driver",
-#         # "left_spring_link", "right_spring_link",
-#         # "left_follower", "right_follower",
-#         "left_pad", "right_pad",
-#         # "left_pad1", "right_pad1",        # (these are not bodies)
-#         # "left_pad2", "right_pad2",        # (these are not bodies)   
-#         # "left_silicone_pad", "right_silicone_pad",
-#     }
-#     arm_names = {
-#         "robot_base", #"shoulder_link", #"upper_arm_link",
-#         "forearm_link", "wrist_1_link", "wrist_2_link",
-#         "wrist_3_link", "gripper_base",
-#         *gripper_names,
-#     }
-#     # ---------- convert body names to integer body-ids -----------------
-#     gripper_bodies = { get_body_id(m, gripper) for gripper in gripper_names }
-#     arm_bodies = { get_body_id(m, arm) for arm in arm_names }
-#     table_body = get_body_id(m, "table")
-    
-#     return (gripper_bodies, arm_bodies, table_body)
-
-
-# def get_block_grasp_state(m: mujoco.MjModel,
-#                     d: mujoco.MjData) -> int:
-    
-#     one_finger_grip = False
-    
-#     for k in range(d.ncon):
-#         c = d.contact[k]
-#         b1 = m.geom_bodyid[c.geom1]
-#         b2 = m.geom_bodyid[c.geom2]
-        
-#         if ((b1 in ("left_pad1_contact", "right_pad1_contact") and b2 == "fish" or 
-#             b2 in ("left_pad1_contact", "right_pad1_contact") and b1 == "fish") and
-#             not one_finger_grip):
-#             one_finger_grip = True
-#         elif ((b1 in ("left_pad1_contact", "right_pad1_contact") and b2 == "fish" or 
-#               b2 in ("left_pad1_contact", "right_pad1_contact") and b1 == "fish") and
-#               one_finger_grip):
-#             return 1
-#     return 0
 
 
 def get_robust_block_grasp_state(m: mujoco.MjModel, 
@@ -240,6 +196,75 @@ def get_table_collision(m: mujoco.MjModel,
         if (b1 in gripper_bodies and b2 == table_body) or (b2 in gripper_bodies and b1 == table_body):
             return 1
     return 0
+
+
+
+
+
+def get_2f85_to_mug_rel_xvelp(m: mujoco.MjModel,
+                              d: mujoco.MjData) -> np.ndarray:
+    return get_2f85_xvelp(m, d) - get_mug_xvelp(m, d)
+
+
+def get_2f85_to_mug_rel_xpos(m: mujoco.MjModel,
+                             d: mujoco.MjData) -> np.ndarray:
+    return get_2f85_xpos(m, d) - get_mug_xpos(m, d)
+
+
+def get_mug_to_ghost_rel_xpos(m: mujoco.MjModel,
+                              d: mujoco.MjData) -> np.ndarray:
+    return get_mug_xpos(m, d) - get_ghost_xpos(m, d)
+
+
+
+
+
+# def init_collision_cache(m: mujoco.MjModel) -> tuple:
+#     # ---------- names you may need to update when renaming ------------
+#     gripper_names = {
+#         # "left_driver", "right_driver",
+#         # "left_spring_link", "right_spring_link",
+#         # "left_follower", "right_follower",
+#         "left_pad", "right_pad",
+#         # "left_pad1", "right_pad1",        # (these are not bodies)
+#         # "left_pad2", "right_pad2",        # (these are not bodies)   
+#         # "left_silicone_pad", "right_silicone_pad",
+#     }
+#     arm_names = {
+#         "robot_base", #"shoulder_link", #"upper_arm_link",
+#         "forearm_link", "wrist_1_link", "wrist_2_link",
+#         "wrist_3_link", "gripper_base",
+#         *gripper_names,
+#     }
+#     # ---------- convert body names to integer body-ids -----------------
+#     gripper_bodies = { get_body_id(m, gripper) for gripper in gripper_names }
+#     arm_bodies = { get_body_id(m, arm) for arm in arm_names }
+#     table_body = get_body_id(m, "table")
+    
+#     return (gripper_bodies, arm_bodies, table_body)
+
+
+# def get_block_grasp_state(m: mujoco.MjModel,
+#                     d: mujoco.MjData) -> int:
+    
+#     one_finger_grip = False
+    
+#     for k in range(d.ncon):
+#         c = d.contact[k]
+#         b1 = m.geom_bodyid[c.geom1]
+#         b2 = m.geom_bodyid[c.geom2]
+        
+#         if ((b1 in ("left_pad1_contact", "right_pad1_contact") and b2 == "fish" or 
+#             b2 in ("left_pad1_contact", "right_pad1_contact") and b1 == "fish") and
+#             not one_finger_grip):
+#             one_finger_grip = True
+#         elif ((b1 in ("left_pad1_contact", "right_pad1_contact") and b2 == "fish" or 
+#               b2 in ("left_pad1_contact", "right_pad1_contact") and b1 == "fish") and
+#               one_finger_grip):
+#             return 1
+#     return 0
+
+
 
 #@working
 # def get_robot_collision(m: mujoco.MjModel,

@@ -1,95 +1,122 @@
-import gymnasium as gym
-from stable_baselines3 import PPO
-from imitation.algorithms import bc
-from imitation.data import rollout
-from gymnasium_src.scripts.imitation_rl.collect_demos import load_demos
-from stable_baselines3 import PPO
+import os
 import numpy as np
 import torch
-import register_envs # Import your new registration file
 import yaml
 from gymnasium.wrappers import FrameStackObservation
-import os
+from imitation.algorithms import bc
+from imitation.data import rollout
+from stable_baselines3 import PPO
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
+import register_envs
+from gymnasium_src.scripts.imitation_rl.collect_demos import load_demos
 
 
-
-def train_behavioral_cloning(expert_trajs):
-
-    # Create environment
-    env = gym.make(id=f"gymnasium_env/imitation_{agent_mode}-v0")
+def train_bc(expert_trajs):
+    """
+    Trains a BC agent.
+    """
     
+    # Define file paths
+    save_dir = "policies/imitation_rl_policies"
+    os.makedirs(save_dir, exist_ok=True)
+    policy_fpath = f"{save_dir}/bc_policy_{imitation_mode}.zip"
+    vecnormalize_fpath = f"{save_dir}/bc_vecnormalize_{imitation_mode}.pkl"
+
+    # Setup environment kwargs
+    env_kwargs = {}
     policy_kwargs = dict(net_arch=net_arch)
-    
+
     if feature_encoder == "transformer":
-        env = FrameStackObservation(env, stack_size=history_len)
-        
+        env_kwargs.update(dict(
+            wrapper_class=FrameStackObservation,
+            wrapper_kwargs=dict(stack_size=history_len)
+        ))
         from gymnasium_src.feature_extractors.transformer import TransformerFeatureExtractor
         policy_kwargs.update(dict(
             features_extractor_class=TransformerFeatureExtractor,
-            features_extractor_kwargs=dict(features_dim=256), # Output dimension of the transformer
+            features_extractor_kwargs=dict(features_dim=256),
         ))
-        
         from gymnasium_src.scripts.imitation_rl.collect_demos import stack_expert_trajectories
         expert_trajs = stack_expert_trajectories(expert_trajs, history_len)
-    
-    # Convert trajectories to transitions
-    transitions = rollout.flatten_trajectories(expert_trajs)
-    
-    policy = PPO("MlpPolicy", env, policy_kwargs=policy_kwargs, device=device).policy
-    
-    save_dir = "policies/imitation_rl_policies"
-    policy_path = f"{save_dir}/bc_policy_{agent_mode}.zip"
-    
-    if os.path.exists(policy_path) and resume:
-        print(f"Loading existing policy from {policy_path}")
-        saved_data = torch.load(policy_path, weights_only=False)
-        policy.load_state_dict(saved_data["state_dict"])
 
+    # Create a single, vectorized environment
+    env = make_vec_env(
+        env_id=f"gymnasium_env/imitation_{imitation_mode}-v0",
+        n_envs=1,
+        env_kwargs={"render_mode": "rgb_array"},
+        **env_kwargs
+    )
+
+    if resume_training and os.path.exists(policy_fpath):
+        print(f"Loading existing policy and env stats to resume BC training...")
+        # 1. Load VecNormalize statistics
+        env = VecNormalize.load(vecnormalize_fpath, env)
+
+        # 2. Load PPO agent
+        agent = PPO.load(policy_fpath, env=env, device=device)
+
+    else:
+        print("Starting BC training from scratch...")
+        # Normalize observations
+        env = VecNormalize(env, norm_obs=True, norm_reward=False, clip_obs=clip_obs)
+        
+        # Initialize PPO agent
+        agent = PPO(
+            "MlpPolicy",
+            env,
+            policy_kwargs=policy_kwargs,
+            device=device
+        )
+
+    # Convert expert trajectories to transitions
+    transitions = rollout.flatten_trajectories(expert_trajs)
+
+    # Initialize the BC trainer
     bc_trainer = bc.BC(
         observation_space=env.observation_space,
         action_space=env.action_space,
         demonstrations=transitions,
-        policy=policy,
-        device=torch.device(device) if device != "auto" else "auto",
+        policy=agent.policy,
+        device=torch.device(device),
         optimizer_cls=torch.optim.Adam,
         optimizer_kwargs={"lr": optimizer_lr},
         rng=np.random.default_rng(),
-        
-        l2_weight=l2_weight,  # Pass l2_weight as a direct argument to bc.BC
-        ent_weight=ent_weight, # Increase from the default of 1e-3
+        l2_weight=l2_weight,
+        ent_weight=ent_weight,
         batch_size=batch_size
     )
-    
-    # Train BC
+
+    # Train the BC agent
     bc_trainer.train(n_epochs=n_epochs)
-    
-    # Save trainer
-    os.makedirs(save_dir, exist_ok=True)
-    bc_trainer.policy.save(policy_path)
-    print(f"Saved BC trainer to {policy_path}")
-    
-    return bc_trainer
 
+    # Save all components
+    agent.save(policy_fpath)
+    env.save(vecnormalize_fpath)
 
+    print(f"Saved BC policy to {policy_fpath}")
+    print(f"Saved VecNormalize stats to {vecnormalize_fpath}")
 
 if __name__ == "__main__":
-    with open("gymnasium_src/config/config_bc.yml", "r") as f:  yml = yaml.safe_load(f)    
-    agent_mode = yml["agent_mode"]
+    with open("gymnasium_src/config/config_bc.yml", "r") as f: yml = yaml.safe_load(f)
+    imitation_mode = yml["imitation_mode"]
     device = yml["device"]
-    resume = yml["resume"]
+    resume_training = yml["resume_training"]
+
     hyperparameters = yml["hyperparameters"]
-    net_arch = hyperparameters.get("net_arch")
-    optimizer_lr = float(hyperparameters.get("optimizer_lr"))
-    l2_weight = float(hyperparameters.get("l2_weight"))
-    ent_weight = float(hyperparameters.get("ent_weight"))
-    batch_size = hyperparameters.get("batch_size")
-    n_epochs = hyperparameters.get("n_epochs")
+    clip_obs = hyperparameters["clip_obs"]
+    net_arch = hyperparameters["net_arch"]
+    optimizer_lr = float(hyperparameters["optimizer_lr"])
+    l2_weight = float(hyperparameters["l2_weight"])
+    ent_weight = float(hyperparameters["ent_weight"])
+    batch_size = hyperparameters["batch_size"]
+    n_epochs = hyperparameters["n_epochs"]
     feature_encoder = hyperparameters.get("feature_encoder")
     history_len = hyperparameters.get("history_len")
 
-    # Load the expert demonstrations
-    demos_fpath = f"gymnasium_src/demos/expert_demos_{agent_mode}.pkl"
+    # Load expert demonstrations
+    demos_fpath = f"gymnasium_src/demos/expert_demos_{imitation_mode}.pkl"
     expert_trajectories = load_demos(demos_fpath)
 
-    # Train the BC agent
-    trained_policy = train_behavioral_cloning(expert_trajectories)
+    # Train BC agent
+    train_bc(expert_trajectories)

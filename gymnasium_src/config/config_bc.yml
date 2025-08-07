@@ -1,14 +1,15 @@
-agent_mode: "indirect"
+imitation_mode: "indirect"
 device: "cpu"
-resume: False
+resume_training: True
 hyperparameters:
+  clip_obs: 10
   net_arch:
-    - 1028
-    - 1028
+    - 256
+    - 256
   optimizer_lr: 3e-4
   l2_weight: 1e-4
   ent_weight: 1e-3
-  batch_size: 10
-  n_epochs: 10
+  batch_size: 3000
+  n_epochs: 1
   feature_encoder: "transformer"
   history_len: 5

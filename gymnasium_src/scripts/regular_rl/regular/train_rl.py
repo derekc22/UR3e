@@ -4,7 +4,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.env_util import make_vec_env
-import register_envs # Import your new registration file
+import register_envs 
 import yaml
 
 def train_rl():
@@ -48,7 +48,7 @@ def train_rl():
     )
 
     # Save the model
-    model.save("policies/regular_rl_policies")
+    model.save("policies/rl_policies")
 
 if __name__ == "__main__":
     with open("gymnasium_src/config/config_rl.yml", "r") as f:  yml = yaml.safe_load(f)    

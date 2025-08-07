@@ -32,9 +32,9 @@ def main():
 
     m, d = load_model(m_path)
     
-    # mug   = 7  nq, 6  nv, 0 nu
     # ur3e  = 6  nq, 6  nv, 6 nu
     # 2f85  = 8  nq, 8  nv, 1 nu
+    # mug   = 7  nq, 6  nv, 0 nu
     # total = 21 nq, 20 nv, 7 nu
 
 
