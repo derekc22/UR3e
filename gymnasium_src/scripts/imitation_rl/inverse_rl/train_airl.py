@@ -1,70 +1,96 @@
+import os
 import numpy as np
 import torch
-from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, SubprocVecEnv
+import yaml
+from gymnasium.wrappers import FrameStackObservation
 from imitation.algorithms.adversarial.airl import AIRL
 from imitation.data import rollout
 from imitation.rewards.reward_nets import BasicRewardNet
-from gymnasium_src.scripts.imitation_rl.collect_demos import load_demos
-import register_envs # Import your new registration file
+from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
-import yaml
-from gymnasium.wrappers import FrameStackObservation
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
+import register_envs
+from gymnasium_src.scripts.imitation_rl.collect_demos import load_demos
+
 
 def train_airl(expert_trajs):
     """
     Trains an AIRL agent.
-
-    Args:
-        expert_trajs: A list of expert trajectories.
     """
-
-    venv_kwargs = {}   
-    policy_kwargs = dict(net_arch=net_arch)
     
-    if feature_encoder == "transformer":
-        from gymnasium_src.feature_extractors.transformer import TransformerFeatureExtractor
-        policy_kwargs.update(dict(
-            features_extractor_class=TransformerFeatureExtractor,
-            features_extractor_kwargs=dict(features_dim=256), # Output dimension of the transformer
-        ))
-        
-        from gymnasium_src.scripts.imitation_rl.collect_demos import stack_expert_trajectories
-        expert_trajs = stack_expert_trajectories(expert_trajs, history_len)
+    # Define file paths
+    save_dir = "policies/imitation_rl_policies"
+    os.makedirs(save_dir, exist_ok=True)
+    policy_fpath = f"{save_dir}/airl_policy_{imitation_mode}.zip"
+    reward_net_path = f"{save_dir}/airl_reward_net_{imitation_mode}.pt"
+    vecnormalize_fpath = f"{save_dir}/airl_vecnormalize_{imitation_mode}.pkl"
 
-        venv_kwargs.update(dict(        
+    # Setup environment kwargs
+    venv_kwargs = {}
+    policy_kwargs = dict(net_arch=net_arch)
+
+    if feature_encoder == "transformer":
+        venv_kwargs.update(dict(
             wrapper_class=FrameStackObservation,
             wrapper_kwargs=dict(stack_size=history_len)
         ))
-    
-    # Register the custom environment
+        from gymnasium_src.feature_extractors.transformer import TransformerFeatureExtractor
+        policy_kwargs.update(dict(
+            features_extractor_class=TransformerFeatureExtractor,
+            features_extractor_kwargs=dict(features_dim=256),
+        ))
+        from gymnasium_src.scripts.imitation_rl.collect_demos import stack_expert_trajectories
+        expert_trajs = stack_expert_trajectories(expert_trajs, history_len)
+
+    # Create the vectorized environment
     venv = make_vec_env(
-        env_id=f"gymnasium_env/imitation_{agent_mode}-v0",
+        env_id=f"gymnasium_env/imitation_{imitation_mode}-v0",
         n_envs=n_envs,
         env_kwargs={"render_mode": "rgb_array"},
-        # env_kwargs={"render_mode": "human"},
         vec_env_cls=SubprocVecEnv,
         **venv_kwargs
     )
-
-    # Create the vectorized environment
-    venv = VecNormalize(venv, norm_obs=True, norm_reward=False, clip_obs=clip_obs)
-
-    # Convert trajectories to transitions, which is the format required by the AIRL trainer
-    transitions = rollout.flatten_trajectories(expert_trajs)
-
-    # Initialize the generator, which is a PPO policy    
-    generator = PPO("MlpPolicy", venv, n_steps=n_steps, policy_kwargs=policy_kwargs)
-
-    # The reward network that AIRL will learn
+    
     reward_net = BasicRewardNet(
         venv.observation_space,
         venv.action_space,
         normalize_input_layer=False,
-        hid_sizes=hid_sizes,
-    )
+        hid_sizes=hid_sizes
+    ).to(device)
 
-    # Initialize the AIRL trainer
+    if resume_training and os.path.exists(policy_fpath):
+        print("Loading existing policy, reward net, and env stats to resume AIRL training...")
+        # 1. Load VecNormalize statistics
+        venv = VecNormalize.load(vecnormalize_fpath, venv)
+
+        # 2. Load PPO generator
+        generator = PPO.load(policy_fpath, env=venv, device=device)
+
+        # 3. Load Reward Network
+        # state_dict = torch.load(reward_net_path)
+        # unprefixed_state_dict = {k.removeprefix("base."): v for k, v in state_dict.items()}
+        # reward_net.load_state_dict(unprefixed_state_dict)
+        reward_net.load_state_dict(torch.load(reward_net_path))
+
+    else:
+        print("Starting AIRL training from scratch...")
+        # Normalize observations
+        venv = VecNormalize(venv, norm_obs=True, norm_reward=False, clip_obs=clip_obs)
+
+        # Initialize PPO generator
+        generator = PPO(
+            "MlpPolicy",
+            venv,
+            n_steps=n_steps,
+            batch_size=batch_size,
+            policy_kwargs=policy_kwargs,
+            device=device
+        )
+
+    # Convert expert trajectories to transitions
+    transitions = rollout.flatten_trajectories(expert_trajs)
+
+    # Initialize AIRL trainer
     airl_trainer = AIRL(
         demonstrations=transitions,
         demo_batch_size=demo_batch_size,
@@ -72,31 +98,37 @@ def train_airl(expert_trajs):
         n_disc_updates_per_round=n_disc_updates_per_round,
         venv=venv,
         gen_algo=generator,
-        reward_net=reward_net,
+        reward_net=reward_net
     )
 
     # Train the AIRL agent
     airl_trainer.train(total_timesteps=total_timesteps)
 
-    # Save the trained policy and reward network
-    save_dir = "policies/imitation_rl_policies"
-    airl_trainer.policy.save(f"{save_dir}/airl_policy_{agent_mode}.zip")
-    torch.save(airl_trainer.reward_train.state_dict(), f"{save_dir}/airl_reward_net_{agent_mode}.pt")
-    print(f"Saved AIRL policy to {save_dir}/airl_policy_{agent_mode}.zip")
-    print(f"Saved AIRL reward network to {save_dir}/airl_reward_net_{agent_mode}.pt")
+    # Save all components
+    generator.save(policy_fpath)
+    # torch.save(airl_trainer.reward_train.state_dict(), reward_net_path)
+    torch.save(airl_trainer._reward_net.state_dict(), reward_net_path)
+    venv.save(vecnormalize_fpath)
 
-    return airl_trainer.policy
+    print(f"Saved AIRL policy to {policy_fpath}")
+    print(f"Saved AIRL reward network to {reward_net_path}")
+    print(f"Saved VecNormalize stats to {vecnormalize_fpath}")
+
+
 
 if __name__ == "__main__":
-    with open("gymnasium_src/config/config_airl.yml", "r") as f:  yml = yaml.safe_load(f)    
-    agent_mode = yml["agent_mode"]
+    with open("gymnasium_src/config/config_airl.yml", "r") as f: yml = yaml.safe_load(f)
+    imitation_mode = yml["imitation_mode"]
     device = yml["device"]
     n_envs = yml["n_envs"]
+    resume_training = yml["resume_training"]
+
     hyperparameters = yml["hyperparameters"]
     clip_obs = hyperparameters["clip_obs"]
     net_arch = hyperparameters["net_arch"]
     n_steps = hyperparameters["n_steps"]
     hid_sizes = hyperparameters["hid_sizes"]
+    batch_size = hyperparameters["batch_size"]
     demo_batch_size = hyperparameters["demo_batch_size"]
     gen_replay_buffer_capacity = hyperparameters["gen_replay_buffer_capacity"]
     n_disc_updates_per_round = hyperparameters["n_disc_updates_per_round"]
@@ -104,9 +136,9 @@ if __name__ == "__main__":
     feature_encoder = hyperparameters.get("feature_encoder")
     history_len = hyperparameters.get("history_len")
 
-    # Load the expert demonstrations
-    demos_fpath = f"gymnasium_src/demos/expert_demos_{agent_mode}.pkl"
+    # Load expert demonstrations
+    demos_fpath = f"gymnasium_src/demos/expert_demos_{imitation_mode}.pkl"
     expert_trajectories = load_demos(demos_fpath)
 
-    # Train the AIRL agent
-    trained_policy = train_airl(expert_trajectories)
+    # Train AIRL agent
+    train_airl(expert_trajectories)

@@ -60,14 +60,27 @@ def stack_expert_trajectories(trajectories, history_len):
 
 
 def get_obs(m, d):
+    # return np.hstack([
+    #     get_2f85_xpos(m, d), # 3 dim
+    #     get_mug_xpos(m, d),  # 3 dim
+    #     get_ghost_xpos(m, d), # 3 dim
+    #     get_robust_block_grasp_state(m, d), # 1 dim
+    #     get_2f85_xvelp(m, d), # 3 dim
+    #     get_ur3e_qpos(d), # 6 dim
+    #     get_ur3e_qvel(d), # 6 dim
+    # ])
+    
     return np.hstack([
         get_2f85_xpos(m, d), # 3 dim
         get_mug_xpos(m, d),  # 3 dim
         get_ghost_xpos(m, d), # 3 dim
+        get_2f85_to_mug_rel_xpos(m, d), # 3 dim
+        get_mug_to_ghost_rel_xpos(m, d), # 3 dim
+        get_2f85_xvelp(m, d), # 3 dim
+        get_2f85_to_mug_rel_xvelp(m, d), # 3 dim
+        get_finger_jnt_disp(d), # 1 dim
+        get_finger_jnt_vel(d), # 1 dim
         get_robust_block_grasp_state(m, d), # 1 dim
-        get_2f85_xvel(m, d), # 3 dim
-        get_ur3e_qpos(d), # 6 dim
-        get_ur3e_qvel(d), # 6 dim
     ])
     
 
@@ -85,7 +98,7 @@ def collect_expert_demonstrations(num_demos):
     trajectories = []
 
     for demo in range(num_demos):
-        print(f"Collecting {agent_mode} demonstration {demo+1}/{num_demos}")
+        print(f"Collecting {imitation_mode} demonstration {demo+1}/{num_demos}")
         m, d = load_model(model_path)
         reset_with_mug(m, d, reset_mode=reset_mode, keyframe="down", noise_mag=noise_mag)
 
@@ -131,7 +144,7 @@ def collect_expert_demonstrations(num_demos):
             
             u = pid_task_ctrl(t, m, d, traj_target[t, :], pos_gains, rot_gains, pos_errs, rot_errs, tot_pos_errs, tot_rot_errs)
             
-            if agent_mode == "indirect":
+            if imitation_mode == "indirect":
                 # Convert to env action space [x, y, z, grip]
                 env_action = np.array([
                     traj_target[t, 0],  # x
@@ -139,7 +152,7 @@ def collect_expert_demonstrations(num_demos):
                     traj_target[t, 2],  # z
                     u[-1]               # grip
                 ])
-            elif agent_mode == "direct":
+            elif imitation_mode == "direct":
                 env_action = u
                 
             # Step simulation
@@ -174,7 +187,7 @@ def save_demos(trajectories, save_path):
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
     # Load existing data if file exists
-    if os.path.exists(save_path) and resume:
+    if os.path.exists(save_path) and resume_training:
         with open(save_path, "rb") as f:
             existing_data = pkl.load(f)
     else:
@@ -201,15 +214,15 @@ def load_demos(load_fpath):
 if __name__ == "__main__":
     with open("gymnasium_src/config/settings.yml", "r") as f:  yml = yaml.safe_load(f)
     settings = yml["collect_demos.py"]    
-    agent_mode = settings["agent_mode"]
+    imitation_mode = settings["imitation_mode"]
     num_demos = settings["num_demos"]
     visualize = settings["visualize"]
     reset_mode = settings["reset_mode"]
     noise_mag = settings["noise_mag"]
     down_sample = settings["down_sample"]
-    resume = settings["resume"]
+    resume_training = settings["resume_training"]
 
     # Collect and save demonstrations
-    demos_fpath = f"gymnasium_src/demos/expert_demos_{agent_mode}.pkl"
+    demos_fpath = f"gymnasium_src/demos/expert_demos_{imitation_mode}.pkl"
     expert_trajs = collect_expert_demonstrations(num_demos)
     save_demos(expert_trajs, demos_fpath)

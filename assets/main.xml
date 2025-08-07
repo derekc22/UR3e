@@ -230,7 +230,6 @@
                             <site name="left_pad1_site" pos="0 -0.007 0.018125" type="box" size="0.01 0.0005 0.017" rgba="0 0 1 1"/>
                             <!-- <site name="left_pad1_site" pos="0 -0.0026 0.028125" type="box" size="0.011 0.004 0.009375" rgba="0 0 1 1"/> -->
 
-
                             <inertial mass="0.0035" pos="0 -0.0025 0.0185" quat="1 0 0 1" diaginertia="4.73958e-07 3.64583e-07 1.23958e-07"/>
                             <geom name="left_gripper_pad" class="visual" mesh="gripper_pad"/>
                             <body name="left_silicone_pad">

@@ -30,7 +30,6 @@ class UR3eEnv(MujocoEnv):
     }    
 
     def __init__(self, render_mode=None):
-
         
         # model_path = os.path.join(os.path.dirname(__file__), "archive/model/ur3e.xml")
         model_path = os.path.abspath("./assets/main.xml")
@@ -131,7 +130,6 @@ class UR3eEnv(MujocoEnv):
         #     'ki': np.diag([0, 0, 0])
         #     # 'ki': np.diag([0, 0, 0])
         # }
-        self.site_id = get_site_id(self.model, "tcp")
         self.collision_cache = init_collision_cache(self.model)
         
 

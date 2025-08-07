@@ -15,11 +15,9 @@ import os
 import numpy as np
 from controller.move_l_task import *
 from controller.build_traj import *
-from controller.controller_utils import get_task_space_state
-from controller.aux import plot_plots
 from utils.utils import *
 
-render_fps = 500
+render_fps = 1000
 dt = 0.001
 
 class ImitationEnvIndirect(MujocoEnv):
@@ -35,7 +33,7 @@ class ImitationEnvIndirect(MujocoEnv):
         self.episode = 0
         self.t = 0
         
-        obs_dim = 25 
+        obs_dim = 24
         observation_space = spaces.Box(
             low=-np.inf,
             high=np.inf,
@@ -90,12 +88,10 @@ class ImitationEnvIndirect(MujocoEnv):
         # Step simulation
         self.do_simulation(u, self.frame_skip)
         observation = self._get_obs()
-        # print(observation[9])
         
         # Simple reward for demonstration purposes
         # User-specified rewards are not used by the imitation library during gail or airl
         # They are overridden by the learned reward function. Thus, a placeholder of -1 is used here
-        # reward = -np.linalg.norm(observation[3:6] - observation[6:9])  # Distance between mug and target
         reward = -1 
         
         terminated = self._check_termination(observation)
@@ -122,14 +118,26 @@ class ImitationEnvIndirect(MujocoEnv):
         return self._get_obs()
     
     def _get_obs(self):
+        # return np.hstack([
+        #     get_2f85_xpos(self.model, self.data),  # 3 dim
+        #     get_mug_xpos(self.model, self.data),    # 3 dim
+        #     get_ghost_xpos(self.model, self.data),  # 3 dim 
+        #     get_robust_block_grasp_state(self.model, self.data),  # 1 dim
+        #     get_2f85_xvelp(self.model, self.data), # 3 dim
+        #     get_ur3e_qpos(self.data), # 6 dim
+        #     get_ur3e_qvel(self.data), # 6 dim
+        # ])
         return np.hstack([
-            get_2f85_xpos(self.model, self.data),  # 3 dim
-            get_mug_xpos(self.model, self.data),    # 3 dim
-            get_ghost_xpos(self.model, self.data),  # 3 dim 
-            get_robust_block_grasp_state(self.model, self.data),  # 1 dim
-            get_2f85_xvel(self.model, self.data), # 3 dim
-            get_ur3e_qpos(self.data), # 6 dim
-            get_ur3e_qvel(self.data), # 6 dim
+            get_2f85_xpos(self.model, self.data), # 3 dim
+            get_mug_xpos(self.model, self.data),  # 3 dim
+            get_ghost_xpos(self.model, self.data), # 3 dim
+            get_2f85_to_mug_rel_xpos(self.model, self.data), # 3 dim
+            get_mug_to_ghost_rel_xpos(self.model, self.data), # 3 dim
+            get_2f85_xvelp(self.model, self.data), # 3 dim
+            get_2f85_to_mug_rel_xvelp(self.model, self.data), # 3 dim
+            get_finger_jnt_disp(self.data), # 1 dim
+            get_finger_jnt_vel(self.data), # 1 dim
+            get_robust_block_grasp_state(self.model, self.data), # 1 dim
         ])
 
     def _check_termination(self, observation):
