@@ -2,23 +2,22 @@ import os
 import numpy as np
 import yaml
 from gymnasium.wrappers import FrameStackObservation
-from stable_baselines3 import DDPG
-from stable_baselines3.common.noise import OrnsteinUhlenbeckActionNoise
+from stable_baselines3 import SAC
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
 import register_envs
 
 
-def train_ddpg():
+def train_sac():
     """
-    Trains a DDPG agent.
+    Trains a SAC agent.
     """
 
     # Define file paths
     save_dir = "policies/rl_policies"
     os.makedirs(save_dir, exist_ok=True)
-    policy_fpath = f"{save_dir}/ddpg_policy_{action_mode}.zip"
-    vecnormalize_fpath = f"{save_dir}/ddpg_vecnormalize_{action_mode}.pkl"
+    policy_fpath = f"{save_dir}/sac_policy_{action_mode}.zip"
+    vecnormalize_fpath = f"{save_dir}/sac_vecnormalize_{action_mode}.pkl"
 
     # Setup environment kwargs
     venv_kwargs = {}
@@ -45,27 +44,20 @@ def train_ddpg():
     )
 
     if resume_training and os.path.exists(policy_fpath):
-        print("Loading existing policy and env stats to resume DDPG training...")
+        print("Loading existing policy and env stats to resume SAC training...")
         # 1. Load VecNormalize statistics
         venv = VecNormalize.load(vecnormalize_fpath, venv)
 
-        # 2. Load DDPG model
-        model = DDPG.load(policy_fpath, env=venv, device=device)
-        # model = DDPG.set_parameters(policy_fpath, env=venv, device=device)
+        # 2. Load SAC model
+        model = SAC.load(policy_fpath, env=venv, device=device)
 
     else:
-        print("Starting DDPG training from scratch...")
+        print("Starting SAC training from scratch...")
         # Normalize observations
         venv = VecNormalize(venv, norm_obs=True, norm_reward=False, clip_obs=clip_obs)
 
-        # Action noise
-        action_noise = OrnsteinUhlenbeckActionNoise(
-            mean=np.array(action_noise_mean), 
-            sigma=np.array(action_noise_sigma)
-        )
-    
-        # Initialize DDPG model
-        model = DDPG(
+        # Initialize SAC model
+        model = SAC(
             "MlpPolicy", 
             venv,
             learning_rate=learning_rate,
@@ -76,13 +68,13 @@ def train_ddpg():
             gamma=gamma,
             train_freq=train_freq,
             gradient_steps=gradient_steps,
-            action_noise=action_noise,
+            ent_coef=ent_coef,
             policy_kwargs=dict(net_arch=net_arch),
             verbose=1,
             device=device
         )
 
-    # Train the DDPG agent
+    # Train the SAC agent
     model.learn(total_timesteps=total_timesteps, log_interval=10)
 
     # Save all components
@@ -94,7 +86,7 @@ def train_ddpg():
 
 
 if __name__ == "__main__":
-    with open("gymnasium_src/config/config_ddpg.yml", "r") as f: yml = yaml.safe_load(f)    
+    with open("gymnasium_src/config/config_sac.yml", "r") as f: yml = yaml.safe_load(f)    
     action_mode = yml["action_mode"]
     device = yml["device"]
     n_envs = yml["n_envs"]
@@ -111,11 +103,10 @@ if __name__ == "__main__":
     gamma = hyperparameters["gamma"]
     train_freq = tuple(hyperparameters["train_freq"])
     gradient_steps = hyperparameters["gradient_steps"]
+    ent_coef = hyperparameters["ent_coef"]
     total_timesteps = hyperparameters["total_timesteps"]
     feature_encoder = hyperparameters.get("feature_encoder")
     history_len = hyperparameters.get("history_len")
-    action_noise_mean = hyperparameters["action_noise_mean"]
-    action_noise_sigma = hyperparameters["action_noise_sigma"]
 
-    # Train DDPG agent
-    train_ddpg()
+    # Train SAC agent
+    train_sac()

@@ -7,7 +7,7 @@ hyperparameters:
   net_arch: 
     - 256
     - 256
-  learning_rate: 0.001
+  learning_rate: 0.0003
   buffer_size: 200000
   learning_starts: 10000
   batch_size: 256
@@ -15,8 +15,7 @@ hyperparameters:
   gamma: 0.99
   train_freq: [1, "episode"]
   gradient_steps: -1
-  action_noise_mean: [0.0, 0.0, 0.0, 0.0]
-  action_noise_sigma: [0.1, 0.1, 0.1, 0.1]
+  ent_coef: 'auto'
   total_timesteps: 10
   feature_extractor: "transformer"
   history_len: 5
