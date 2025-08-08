@@ -1,14 +1,14 @@
 import gymnasium as gym
 import yaml
 from gymnasium.wrappers import FrameStackObservation
-from stable_baselines3 import DDPG
+from stable_baselines3 import SAC
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import VecNormalize
 import register_envs
 
-def run_trained_ddpg_policy(policy_fpath, vecnormalize_fpath):
+def run_trained_sac_policy(policy_fpath, vecnormalize_fpath):
     """
-    Loads and runs a trained DDPG policy.
+    Loads and runs a trained SAC policy.
     """
 
     env_kwargs = {}
@@ -31,7 +31,7 @@ def run_trained_ddpg_policy(policy_fpath, vecnormalize_fpath):
     env.training = False # Set to evaluation mode
 
     # Load the trained agent
-    model = DDPG.load(policy_fpath, env=env)
+    model = SAC.load(policy_fpath, env=env)
 
     obs = env.reset()
     while True:
@@ -45,13 +45,13 @@ def run_trained_ddpg_policy(policy_fpath, vecnormalize_fpath):
 
 
 if __name__ == "__main__":
-    with open("gymnasium_src/config/config_ddpg.yml", "r") as f: yml = yaml.safe_load(f)    
+    with open("gymnasium_src/config/config_sac.yml", "r") as f: yml = yaml.safe_load(f)    
     action_mode = yml["action_mode"]
     hyperparameters = yml["hyperparameters"]
     feature_encoder = hyperparameters.get("feature_encoder")
     history_len = hyperparameters.get("history_len")
     
     # Define paths
-    policy_fpath = f"policies/rl_policies/ddpg_policy_{action_mode}.zip"
-    vecnormalize_fpath = f"policies/rl_policies/ddpg_vecnormalize_{action_mode}.pkl"
-    run_trained_ddpg_policy(policy_fpath, vecnormalize_fpath)
+    policy_fpath = f"policies/rl_policies/sac_policy_{action_mode}.zip"
+    vecnormalize_fpath = f"policies/rl_policies/sac_vecnormalize_{action_mode}.pkl"
+    run_trained_sac_policy(policy_fpath, vecnormalize_fpath)
