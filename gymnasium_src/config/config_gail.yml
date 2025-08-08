@@ -1,4 +1,4 @@
-imitation_mode: "indirect"
+action_mode: "indirect"
 device: "cpu"
 n_envs: 2
 resume_training: True

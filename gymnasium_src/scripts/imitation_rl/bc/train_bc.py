@@ -7,7 +7,7 @@ from imitation.algorithms import bc
 from imitation.data import rollout
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
+from stable_baselines3.common.vec_env import SubprocVecEnv
 import register_envs
 from gymnasium_src.scripts.imitation_rl.collect_demos import load_demos
 
@@ -20,8 +20,7 @@ def train_bc(expert_trajs):
     # Define file paths
     save_dir = "policies/imitation_rl_policies"
     os.makedirs(save_dir, exist_ok=True)
-    policy_fpath = f"{save_dir}/bc_policy_{imitation_mode}.zip"
-    vecnormalize_fpath = f"{save_dir}/bc_vecnormalize_{imitation_mode}.pkl"
+    policy_fpath = f"{save_dir}/bc_policy_{action_mode}.zip"
 
     # Setup environment kwargs
     env_kwargs = {}
@@ -35,14 +34,14 @@ def train_bc(expert_trajs):
         from gymnasium_src.feature_extractors.transformer import TransformerFeatureExtractor
         policy_kwargs.update(dict(
             features_extractor_class=TransformerFeatureExtractor,
-            features_extractor_kwargs=dict(features_dim=256),
+            features_extractor_kwargs=dict(features_dim=256), # Output dimension of the transformer
         ))
         from gymnasium_src.scripts.imitation_rl.collect_demos import stack_expert_trajectories
         expert_trajs = stack_expert_trajectories(expert_trajs, history_len)
 
     # Create a single, vectorized environment
     env = make_vec_env(
-        env_id=f"gymnasium_env/imitation_{imitation_mode}-v0",
+        env_id=f"gymnasium_env/imitation_{action_mode}-v0",
         n_envs=1,
         env_kwargs={"render_mode": "rgb_array"},
         **env_kwargs
@@ -50,17 +49,11 @@ def train_bc(expert_trajs):
 
     if resume_training and os.path.exists(policy_fpath):
         print(f"Loading existing policy and env stats to resume BC training...")
-        # 1. Load VecNormalize statistics
-        env = VecNormalize.load(vecnormalize_fpath, env)
-
-        # 2. Load PPO agent
+        # Load PPO agent
         agent = PPO.load(policy_fpath, env=env, device=device)
 
     else:
         print("Starting BC training from scratch...")
-        # Normalize observations
-        env = VecNormalize(env, norm_obs=True, norm_reward=False, clip_obs=clip_obs)
-        
         # Initialize PPO agent
         agent = PPO(
             "MlpPolicy",
@@ -71,6 +64,7 @@ def train_bc(expert_trajs):
 
     # Convert expert trajectories to transitions
     transitions = rollout.flatten_trajectories(expert_trajs)
+    print(f"Number of transitions: {len(transitions)}. Total number of batches: {int(len(transitions)/batch_size)*n_epochs}")
 
     # Initialize the BC trainer
     bc_trainer = bc.BC(
@@ -92,14 +86,12 @@ def train_bc(expert_trajs):
 
     # Save all components
     agent.save(policy_fpath)
-    env.save(vecnormalize_fpath)
 
     print(f"Saved BC policy to {policy_fpath}")
-    print(f"Saved VecNormalize stats to {vecnormalize_fpath}")
 
 if __name__ == "__main__":
     with open("gymnasium_src/config/config_bc.yml", "r") as f: yml = yaml.safe_load(f)
-    imitation_mode = yml["imitation_mode"]
+    action_mode = yml["action_mode"]
     device = yml["device"]
     resume_training = yml["resume_training"]
 
@@ -115,7 +107,7 @@ if __name__ == "__main__":
     history_len = hyperparameters.get("history_len")
 
     # Load expert demonstrations
-    demos_fpath = f"gymnasium_src/demos/expert_demos_{imitation_mode}.pkl"
+    demos_fpath = f"gymnasium_src/demos/expert_demos_{action_mode}.pkl"
     expert_trajectories = load_demos(demos_fpath)
 
     # Train BC agent

@@ -69,26 +69,26 @@ def build_traj_l_pick_place_RL(start: np.ndarray,
     block, target = destinations
     
     pick = np.hstack([block[:2], [start[2]], block[3:]])
-    traj_pick = build_traj_l_point_custom(start, pick, hold=40)
-    # traj_place = build_traj_l_point_custom(traj_pick[-1, :], place, hold=5)
+    traj_pick = build_traj_l_point_custom(start, pick, hold=100)
+    # traj_place = build_traj_l_point_custom(traj_pick[-1, :], place, hold=100)
     
     down = np.hstack([traj_pick[-1, :2], [block[2]], traj_pick[-1, 3:]])
-    traj_down = build_traj_l_point_custom(traj_pick[-1, :], down, hold=40)
+    traj_down = build_traj_l_point_custom(traj_pick[-1, :], down, hold=100)
 
     grab = np.append(traj_down[-1, :-1], 1)
-    traj_grab = build_traj_l_point_custom(traj_down[-1, :], grab, hold=80)
+    traj_grab = build_traj_l_point_custom(traj_down[-1, :], grab, hold=100)
 
     up = traj_grab[-1, :] + [0, 0, 0.15, 0, 0, 0, 0]
-    traj_up = build_traj_l_point_custom(traj_grab[-1, :], up, hold=40)
+    traj_up = build_traj_l_point_custom(traj_grab[-1, :], up, hold=100)
     
     place = np.hstack([target[:2], traj_up[-1, 2], target[3:]])
-    traj_place = build_traj_l_point_custom(traj_up[-1, :], place, hold=80)
+    traj_place = build_traj_l_point_custom(traj_up[-1, :], place, hold=100)
     
     descend = target + [0, 0, 0.025, 0, 0, 0, 0] 
-    traj_descend = build_traj_l_point_custom(traj_place[-1, :], descend, hold=40)
+    traj_descend = build_traj_l_point_custom(traj_place[-1, :], descend, hold=100)
     
     end_drop = np.append(traj_descend[-1, :-1], 0)
-    traj_drop = build_traj_l_point_custom(traj_descend[-1, :], end_drop, hold=80)
+    traj_drop = build_traj_l_point_custom(traj_descend[-1, :], end_drop, hold=100)
     
     traj = np.vstack([
         traj_pick,

@@ -1,6 +1,6 @@
-imitation_mode: "indirect"
+action_mode: "indirect"
 device: "cpu"
-resume_training: True
+resume_training: False
 hyperparameters:
   clip_obs: 10
   net_arch:
@@ -9,7 +9,7 @@ hyperparameters:
   optimizer_lr: 3e-4
   l2_weight: 1e-4
   ent_weight: 1e-3
-  batch_size: 3000
-  n_epochs: 1
+  batch_size: 100
+  n_epochs: 1000
   feature_encoder: "transformer"
   history_len: 5

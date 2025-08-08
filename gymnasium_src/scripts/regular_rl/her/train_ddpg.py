@@ -1,91 +1,104 @@
-import gymnasium as gym
-from stable_baselines3 import DDPG
-from stable_baselines3.common.noise import OrnsteinUhlenbeckActionNoise
+import os
 import numpy as np
 import yaml
-import os
-import register_envs
 from gymnasium.wrappers import FrameStackObservation
+from stable_baselines3 import DDPG
+from stable_baselines3.common.noise import OrnsteinUhlenbeckActionNoise
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, SubprocVecEnv
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
+import register_envs
 
 
 def train_ddpg():
+    """
+    Trains a DDPG agent.
+    """
     
-    venv_kwargs = {}   
+    # Define file paths
+    save_dir = "policies/rl_policies"
+    os.makedirs(save_dir, exist_ok=True)
+    policy_fpath = f"{save_dir}/ddpg_policy_{action_mode}.zip"
+    vecnormalize_fpath = f"{save_dir}/ddpg_vecnormalize_{action_mode}.pkl"
+
+    # Setup environment kwargs
+    venv_kwargs = {}
     policy_kwargs = dict(net_arch=net_arch)
-    
+
     if feature_encoder == "transformer":
-        venv_kwargs.update(dict(        
+        venv_kwargs.update(dict(
             wrapper_class=FrameStackObservation,
             wrapper_kwargs=dict(stack_size=history_len)
         ))
-        
         from gymnasium_src.feature_extractors.transformer import TransformerFeatureExtractor
         policy_kwargs.update(dict(
             features_extractor_class=TransformerFeatureExtractor,
             features_extractor_kwargs=dict(features_dim=256), # Output dimension of the transformer
         ))
-    
-    # Create the custom environment
+
+    # Create the vectorized environment
     venv = make_vec_env(
         env_id=f"gymnasium_env/ur3e-v2",
         n_envs=n_envs,
         env_kwargs={"render_mode": "rgb_array"},
-        # env_kwargs={"render_mode": "human"},
         vec_env_cls=SubprocVecEnv,
         **venv_kwargs
     )
 
-    # Create the vectorized environment
-    venv = VecNormalize(venv, norm_obs=True, norm_reward=False, clip_obs=clip_obs)
+    if resume_training and os.path.exists(policy_fpath):
+        print("Loading existing policy, reward net, and env stats to resume DDPG training...")
+        # 1. Load VecNormalize statistics
+        venv = VecNormalize.load(vecnormalize_fpath, venv)
 
-    # Action noise
-    action_noise = OrnsteinUhlenbeckActionNoise(
-        mean=np.array(action_noise_mean), 
-        sigma=np.array(action_noise_sigma)
-    )
+        # 2. Load DDPG model
+        model = DDPG.load(policy_fpath, env=venv, device=device)
+        # model = DDPG.set_parameters(policy_fpath, env=venv, device=device)
 
-    # Define the model
-    model = DDPG(
-        "MlpPolicy", 
-        venv,
-        learning_rate=learning_rate,
-        buffer_size=buffer_size,
-        learning_starts=learning_starts,
-        batch_size=batch_size,
-        tau=tau,
-        gamma=gamma,
-        train_freq=train_freq,
-        gradient_steps=gradient_steps,
-        action_noise=action_noise,
-        policy_kwargs=dict(net_arch=net_arch),
-        verbose=1,
-        device=device
-    )
+    else:
+        print("Starting AIRL training from scratch...")
+        # Normalize observations
+        venv = VecNormalize(venv, norm_obs=True, norm_reward=False, clip_obs=clip_obs)
 
-    save_dir = "policies/rl_policies"
-    policy_fpath = f"{save_dir}/ddpg_policy.zip"
-    os.makedirs(save_dir, exist_ok=True)
+        # Action noise
+        action_noise = OrnsteinUhlenbeckActionNoise(
+            mean=np.array(action_noise_mean), 
+            sigma=np.array(action_noise_sigma)
+        )
+    
+        # Initialize DDPG model
+        model = DDPG(
+            "MlpPolicy", 
+            venv,
+            learning_rate=learning_rate,
+            buffer_size=buffer_size,
+            learning_starts=learning_starts,
+            batch_size=batch_size,
+            tau=tau,
+            gamma=gamma,
+            train_freq=train_freq,
+            gradient_steps=gradient_steps,
+            action_noise=action_noise,
+            policy_kwargs=dict(net_arch=net_arch),
+            verbose=1,
+            device=device
+        )
 
-    if os.path.exists(policy_fpath) and resume_training:
-        print(f"Loading existing policy from {policy_fpath}")
-        model.set_parameters(policy_fpath)
-
-    # Train the model
+    # Train the DDPG agent
     model.learn(total_timesteps=total_timesteps, log_interval=10)
 
-    # Save the final model
+    # Save all components
     model.save(policy_fpath)
+    venv.save(vecnormalize_fpath)
+
     print(f"Saved DDPG policy to {policy_fpath}")
+    print(f"Saved VecNormalize stats to {vecnormalize_fpath}")
+
 
 if __name__ == "__main__":
     with open("gymnasium_src/config/config_ddpg.yml", "r") as f: yml = yaml.safe_load(f)    
-    
-    # Extract general parameters
+    action_mode = yml["action_mode"]
     device = yml["device"]
-    resume_training = yml["resume_training"]
     n_envs = yml["n_envs"]
+    resume_training = yml["resume_training"]
     
     hyperparameters = yml["hyperparameters"]
     clip_obs = hyperparameters["clip_obs"]
@@ -101,9 +114,8 @@ if __name__ == "__main__":
     total_timesteps = hyperparameters["total_timesteps"]
     feature_encoder = hyperparameters.get("feature_encoder")
     history_len = hyperparameters.get("history_len")
+    action_noise_mean = hyperparameters["action_noise_mean"]
+    action_noise_sigma = hyperparameters["action_noise_sigma"]
     
-    action_noise_params = hyperparameters["action_noise"]
-    action_noise_mean = action_noise_params["mean"]
-    action_noise_sigma = action_noise_params["sigma"]
-    
+    # Train DDPG agent
     train_ddpg()

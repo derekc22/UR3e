@@ -1,38 +1,57 @@
 import gymnasium as gym
-from stable_baselines3 import DDPG
 import yaml
-import register_envs 
+from gymnasium.wrappers import FrameStackObservation
+from stable_baselines3 import DDPG
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
+import register_envs
 
-def run_trained_ddpg_policy(policy_fpath):
+def run_trained_ddpg_policy(policy_fpath, vecnormalize_fpath):
     """
     Loads and runs a trained DDPG policy.
     """
-    env = gym.make(
-        id="gymnasium_env/RL-v0",
-        render_mode="human"
-    )
-    
-    # Load the trained agent
-    # Stable-Baselines3 handles policy reconstruction automatically
-    print(f"Loading policy from {policy_fpath}...")
-    model = DDPG.load(policy_fpath, env=env)
-    print("Policy loaded successfully.")
 
-    obs, _ = env.reset()
+    env_kwargs = {}
+    if feature_encoder == "transformer":
+        env_kwargs.update(dict(
+            wrapper_class=FrameStackObservation,
+            wrapper_kwargs=dict(stack_size=history_len)
+        ))
+            
+    # Create a single, vectorized environment
+    env = make_vec_env(
+        env_id=f"gymnasium_env/imitation_{action_mode}-v0",
+        n_envs=1,
+        env_kwargs={"render_mode": "human"},
+        **env_kwargs
+    )
+
+    # Load the saved statistics and wrap the environment
+    env = VecNormalize.load(vecnormalize_fpath, env)
+    env.training = False # Set to evaluation mode
+
+    # Load the trained agent
+    model = DDPG.load(policy_fpath, env=env)
+
+    obs = env.reset()
     while True:
-        # Use the loaded model to predict actions
         action, _ = model.predict(obs, deterministic=True)
-        obs, reward, terminated, truncated, _ = env.step(action)
-        
+        obs, reward, terminated, _ = env.step(action)
         print(f"Reward: {reward:.2f}")
 
-        if terminated or truncated:
-            print("Episode finished. Resetting environment.")
-            obs, _ = env.reset()
+        # In a vectorized environment, 'terminated' is a list.
+        if terminated[0]:
+            obs = env.reset()
+
 
 if __name__ == "__main__":
-    with open("config_ddpg.yml", "r") as f: yml = yaml.safe_load(f)    
-    agent_mode = yml["agent_mode"]
+    with open("gymnasium_src/config/config_ddpg.yml", "r") as f: yml = yaml.safe_load(f)    
+    action_mode = yml["action_mode"]
+    hyperparameters = yml["hyperparameters"]
+    feature_encoder = hyperparameters.get("feature_encoder")
+    history_len = hyperparameters.get("history_len")
     
-    policy_fpath = f"policies/rl_policies/ddpg_policy_{agent_mode}.zip"
-    run_trained_ddpg_policy(policy_fpath)
+    # Define paths
+    policy_fpath = f"policies/rl_policies/ddpg_policy_{action_mode}.zip"
+    vecnormalize_fpath = f"policies/rl_policies/ddpg_vecnormalize_{action_mode}.pkl"
+    run_trained_ddpg_policy(policy_fpath, vecnormalize_fpath)
