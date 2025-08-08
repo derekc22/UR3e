@@ -98,7 +98,7 @@ def collect_expert_demonstrations(num_demos):
     trajectories = []
 
     for demo in range(num_demos):
-        print(f"Collecting {imitation_mode} demonstration {demo+1}/{num_demos}")
+        print(f"Collecting {action_mode} demonstration {demo+1}/{num_demos}")
         m, d = load_model(model_path)
         reset_with_mug(m, d, reset_mode=reset_mode, keyframe="down", noise_mag=noise_mag)
 
@@ -132,7 +132,7 @@ def collect_expert_demonstrations(num_demos):
         obs.append(get_obs(m, d))
         
         acts = []
-        infos = [{} for _ in range(T//down_sample)]
+        infos = []
 
         for t in range(T):
             if visualize:
@@ -144,7 +144,7 @@ def collect_expert_demonstrations(num_demos):
             
             u = pid_task_ctrl(t, m, d, traj_target[t, :], pos_gains, rot_gains, pos_errs, rot_errs, tot_pos_errs, tot_rot_errs)
             
-            if imitation_mode == "indirect":
+            if action_mode == "indirect":
                 # Convert to env action space [x, y, z, grip]
                 env_action = np.array([
                     traj_target[t, 0],  # x
@@ -152,19 +152,24 @@ def collect_expert_demonstrations(num_demos):
                     traj_target[t, 2],  # z
                     u[-1]               # grip
                 ])
-            elif imitation_mode == "direct":
+            elif action_mode == "direct":
                 env_action = u
                 
             # Step simulation
             d.ctrl = u
             mujoco.mj_step(m, d)
+            # time.sleep(0.001)
             
             if t % down_sample == 0:
+                # Append action
                 acts.append(env_action)
                 
-                # Get next state
+                # Get and append next state
                 next_obs = get_obs(m, d)
                 obs.append(next_obs)
+                
+                # Append info
+                infos.append({})
         
         # Create trajectory object
         trajectory = Trajectory(
@@ -187,7 +192,7 @@ def save_demos(trajectories, save_path):
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
     # Load existing data if file exists
-    if os.path.exists(save_path) and resume_training:
+    if os.path.exists(save_path) and resume_collecting:
         with open(save_path, "rb") as f:
             existing_data = pkl.load(f)
     else:
@@ -214,15 +219,15 @@ def load_demos(load_fpath):
 if __name__ == "__main__":
     with open("gymnasium_src/config/settings.yml", "r") as f:  yml = yaml.safe_load(f)
     settings = yml["collect_demos.py"]    
-    imitation_mode = settings["imitation_mode"]
+    action_mode = settings["action_mode"]
     num_demos = settings["num_demos"]
     visualize = settings["visualize"]
     reset_mode = settings["reset_mode"]
     noise_mag = settings["noise_mag"]
     down_sample = settings["down_sample"]
-    resume_training = settings["resume_training"]
+    resume_collecting = settings["resume_collecting"]
 
     # Collect and save demonstrations
-    demos_fpath = f"gymnasium_src/demos/expert_demos_{imitation_mode}.pkl"
+    demos_fpath = f"gymnasium_src/demos/expert_demos_{action_mode}.pkl"
     expert_trajs = collect_expert_demonstrations(num_demos)
     save_demos(expert_trajs, demos_fpath)

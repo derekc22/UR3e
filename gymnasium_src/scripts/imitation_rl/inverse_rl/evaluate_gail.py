@@ -21,7 +21,7 @@ def run_trained_gail_policy(policy_fpath, vecnormalize_fpath):
             
     # Create a single, vectorized environment
     env = make_vec_env(
-        env_id=f"gymnasium_env/imitation_{imitation_mode}-v0",
+        env_id=f"gymnasium_env/imitation_{action_mode}-v0",
         n_envs=1,
         env_kwargs={"render_mode": "human"},
         **env_kwargs
@@ -31,7 +31,7 @@ def run_trained_gail_policy(policy_fpath, vecnormalize_fpath):
     env = VecNormalize.load(vecnormalize_fpath, env)
     env.training = False # Set to evaluation mode
 
-    # Load the trained PPO model
+    # Load the trained agent
     model = PPO.load(policy_fpath, env=env)
 
     obs = env.reset()
@@ -46,13 +46,13 @@ def run_trained_gail_policy(policy_fpath, vecnormalize_fpath):
 
 if __name__ == "__main__":
     with open("gymnasium_src/config/config_gail.yml", "r") as f: yml = yaml.safe_load(f)
-    imitation_mode = yml["imitation_mode"]
+    action_mode = yml["action_mode"]
     hyperparameters = yml["hyperparameters"]
     feature_encoder = hyperparameters.get("feature_encoder")
     history_len = hyperparameters.get("history_len")
     
     # Define paths
-    policy_fpath = f"policies/imitation_rl_policies/gail_policy_{imitation_mode}.zip"
-    vecnormalize_fpath = f"policies/imitation_rl_policies/gail_vecnormalize_{imitation_mode}.pkl"
+    policy_fpath = f"policies/imitation_rl_policies/gail_policy_{action_mode}.zip"
+    vecnormalize_fpath = f"policies/imitation_rl_policies/gail_vecnormalize_{action_mode}.pkl"
 
     run_trained_gail_policy(policy_fpath, vecnormalize_fpath)

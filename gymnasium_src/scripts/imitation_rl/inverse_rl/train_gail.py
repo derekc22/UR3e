@@ -21,9 +21,9 @@ def train_gail(expert_trajs):
     # Define file paths
     save_dir = "policies/imitation_rl_policies"
     os.makedirs(save_dir, exist_ok=True)
-    policy_fpath = f"{save_dir}/gail_policy_{imitation_mode}.zip"
-    reward_net_path = f"{save_dir}/gail_reward_net_{imitation_mode}.pt"
-    vecnormalize_fpath = f"{save_dir}/gail_vecnormalize_{imitation_mode}.pkl"
+    policy_fpath = f"{save_dir}/gail_policy_{action_mode}.zip"
+    reward_net_path = f"{save_dir}/gail_reward_net_{action_mode}.pt"
+    vecnormalize_fpath = f"{save_dir}/gail_vecnormalize_{action_mode}.pkl"
 
     # Setup environment kwargs
     venv_kwargs = {}
@@ -37,14 +37,14 @@ def train_gail(expert_trajs):
         from gymnasium_src.feature_extractors.transformer import TransformerFeatureExtractor
         policy_kwargs.update(dict(
             features_extractor_class=TransformerFeatureExtractor,
-            features_extractor_kwargs=dict(features_dim=256),
+            features_extractor_kwargs=dict(features_dim=256), # Output dimension of the transformer
         ))
         from gymnasium_src.scripts.imitation_rl.collect_demos import stack_expert_trajectories
         expert_trajs = stack_expert_trajectories(expert_trajs, history_len)
 
     # Create the vectorized environment
     venv = make_vec_env(
-        env_id=f"gymnasium_env/imitation_{imitation_mode}-v0",
+        env_id=f"gymnasium_env/imitation_{action_mode}-v0",
         n_envs=n_envs,
         env_kwargs={"render_mode": "rgb_array"},
         vec_env_cls=SubprocVecEnv,
@@ -118,7 +118,7 @@ def train_gail(expert_trajs):
 
 if __name__ == "__main__":
     with open("gymnasium_src/config/config_gail.yml", "r") as f: yml = yaml.safe_load(f)
-    imitation_mode = yml["imitation_mode"]
+    action_mode = yml["action_mode"]
     device = yml["device"]
     n_envs = yml["n_envs"]
     resume_training = yml["resume_training"]
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     history_len = hyperparameters.get("history_len")
 
     # Load expert demonstrations
-    demos_fpath = f"gymnasium_src/demos/expert_demos_{imitation_mode}.pkl"
+    demos_fpath = f"gymnasium_src/demos/expert_demos_{action_mode}.pkl"
     expert_trajectories = load_demos(demos_fpath)
 
     # Train GAIL agent

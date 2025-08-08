@@ -45,7 +45,8 @@ def get_init_mug_xpos(m: mujoco.MjModel,
 
 def get_mug_xpos_noise(noise_mag: str) -> np.ndarray:
     if noise_mag == "high":
-        x_bounds, y_bounds = ([-0.02, 0.02], [-0.25, 0.2])
+        # x_bounds, y_bounds = ([-0.02, 0.02], [-0.25, 0.2])
+        x_bounds, y_bounds = ([-0.02, 0.02], [-0.2, -0.2])
     elif noise_mag == "med":
         x_bounds, y_bounds = ([-0.02, 0.02], [-0.2, 0.1])
     elif noise_mag == "low":

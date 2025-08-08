@@ -1,12 +1,13 @@
+action_mode: "indirect"
 device: "cpu"
 resume_training: false
 n_envs: 1
 hyperparameters:
   clip_obs: 10
-  learning_rate: 0.001
   net_arch: 
     - 256
     - 256
+  learning_rate: 0.001
   buffer_size: 200000
   learning_starts: 10000
   batch_size: 256
@@ -16,7 +17,6 @@ hyperparameters:
     - 1
     - "episode"
   gradient_steps: -1
-  action_noise:
-    mean: [0.0, 0.0, 0.0, 0.0]
-    sigma: [0.1, 0.1, 0.1, 0.1]
-  total_timesteps: 1000000
+  action_noise_mean: [0.0, 0.0, 0.0, 0.0]
+  action_noise_sigma: [0.1, 0.1, 0.1, 0.1]
+  total_timesteps: 10000
