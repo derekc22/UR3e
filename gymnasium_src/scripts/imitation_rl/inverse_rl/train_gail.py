@@ -46,7 +46,7 @@ def train_gail(expert_trajs):
     venv = make_vec_env(
         env_id=f"gymnasium_env/imitation_{action_mode}-v0",
         n_envs=n_envs,
-        env_kwargs={"render_mode": "rgb_array"},
+        env_kwargs={"render_mode": "human" if visualize else "rgb_array"},
         vec_env_cls=SubprocVecEnv,
         **venv_kwargs
     )

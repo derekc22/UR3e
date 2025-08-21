@@ -2,8 +2,9 @@ import mujoco
 import mujoco.viewer
 import time
 import numpy as np
-from controller.controller_utils import *
+from controller.controller_func import *
 from utils.gym_utils import *
+from utils.utils import *
 np.set_printoptions(
     linewidth=400,     # Wider output (default is 75)
     threshold=np.inf,  # Print entire array, no summarization with ...
@@ -38,7 +39,7 @@ def main():
     # total = 21 nq, 20 nv, 7 nu
 
 
-    reset(m, d, "down")
+    reset(m, d, "home")
 
 
     viewer = mujoco.viewer.launch_passive(m, d)
@@ -68,6 +69,8 @@ def main():
         # print(get_body_size(m, "fish"))
         # get_mug_toppled(m, d)
         # print(get_mug_toppled(m, d))
+        # print(get_body_size(m, "fish"))
+        print(get_site_xpos(m, d, "handle_site"))
 
         # print(get_self_collision(m, d, collision_cache))
         # print(get_table_collision(m, d, collision_cache))

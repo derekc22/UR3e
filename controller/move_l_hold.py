@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib
 np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 matplotlib.use('Agg')  # Set backend to non-interactive
-from controller.controller_utils import get_task_space_state, pid_task_ctrl
+from controller.controller_func import get_task_space_state, pid_task_ctrl
 from utils.utils import *
 from controller.build_traj import build_traj_l_hold
 from controller.aux import load_trajectory, cleanup

@@ -1,7 +1,7 @@
 collect_demos.py:
   action_mode: "indirect"
   resume_collecting: True
-  num_demos: 1
+  num_demos: 10
   visualize: True
   reset_mode: "stochastic"
   noise_mag: "high"

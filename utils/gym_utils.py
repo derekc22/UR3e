@@ -12,7 +12,9 @@ def get_mug_toppled(m: mujoco.MjModel,
     dx, dy, _ = get_body_size(m, "fish")
     # print(get_mug_xpos(m, d)[-1], init_mug_z, max(dx, dy)/2)
     # 0.045-0.01989224457978381
-    return init_mug_z - get_mug_xpos(m, d)[-1] > max(dx, dy)/2
+    # return init_mug_z - get_mug_xpos(m, d)[-1] > max(dx, dy)/2
+    # print(init_mug_z, get_mug_xpos(m, d)[-1])
+    return  get_mug_xpos(m, d)[-1] <= max(dx, dy)
 
 
 def get_mug_qpos(d: mujoco.MjData) -> np.ndarray:
@@ -45,8 +47,8 @@ def get_init_mug_xpos(m: mujoco.MjModel,
 
 def get_mug_xpos_noise(noise_mag: str) -> np.ndarray:
     if noise_mag == "high":
-        # x_bounds, y_bounds = ([-0.02, 0.02], [-0.25, 0.2])
-        x_bounds, y_bounds = ([-0.02, 0.02], [-0.2, -0.2])
+        x_bounds, y_bounds = ([-0.02, 0.02], [-0.25, 0.2])
+        # x_bounds, y_bounds = ([-0.02, 0.02], [-0.2, -0.2])
     elif noise_mag == "med":
         x_bounds, y_bounds = ([-0.02, 0.02], [-0.2, 0.1])
     elif noise_mag == "low":

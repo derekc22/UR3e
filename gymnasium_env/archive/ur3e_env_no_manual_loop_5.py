@@ -7,7 +7,7 @@ import mujoco
 from utils.gymnasium_env_utils import *
 from controller.move_l_task import *
 from controller.build_traj import *
-from controller.controller_utils import get_task_space_state
+from controller.controller_func import get_task_space_state
 from controller.aux import plot_plots
 import time
 from utils.utils import *

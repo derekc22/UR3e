@@ -2,12 +2,10 @@ import os
 import numpy as np
 from gymnasium import spaces
 from gymnasium.envs.mujoco import MujocoEnv
-from mujoco import MjModel
-import mujoco
 from utils.gym_utils import *
 from controller.move_l_task import *
 from controller.build_traj import *
-from controller.controller_utils import get_task_space_state
+from controller.controller_func import get_task_space_state
 from controller.aux import plot_plots
 import time
 from utils.utils import *
@@ -31,7 +29,6 @@ class UR3eEnv(MujocoEnv):
 
     def __init__(self, render_mode=None):
         
-        # model_path = os.path.join(os.path.dirname(__file__), "archive/model/ur3e.xml")
         model_path = os.path.abspath("./assets/main.xml")
 
         # Temporary MujocoEnv init to access model parameters
@@ -205,7 +202,7 @@ class UR3eEnv(MujocoEnv):
 
 
     def reset_model(self):
-        init_qpos, init_qvel = get_init(self.model, reset_mode="deterministic", keyframe="down")
+        init_qpos, init_qvel = get_init(self.model, reset_mode="stochastic", keyframe="down", noise_mag="high")
         self.set_state(init_qpos, init_qvel)
 
         # stop = np.hstack([get_mug_xpos(self.model, self.data), [0, 0, 0]])

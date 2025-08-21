@@ -1,12 +1,30 @@
-n_envs: 8
+# original hyperparameters
+# hyperparameters:
+  # eval_freq: 5000
+  # n_steps: 4096
+  # n_epochs: 30
+  # gae_lambda: 0.95
+  # clip_range: 0.2
+  # ent_coef: 0.01
+
+action_mode: "indirect"
+device: "cpu"
+n_envs: 1
+resume_training: False
+visualize: True
 hyperparameters:
-  eval_freq: 5000
-  learning_rate: 3e-4
-  n_steps: 4096
-  batch_size: 128
+  clip_obs: 10
+  net_arch: 
+    - 256
+    - 256
+  learning_rate: 0.0003
+  buffer_size: 200000
+  learning_starts: 10000
+  batch_size: 256
   n_epochs: 30
   gamma: 0.99
   gae_lambda: 0.95
-  clip_range: 0.2
   ent_coef: 0.01
   total_timesteps: 100000
+  feature_extractor: "transformer"
+  history_len: 5

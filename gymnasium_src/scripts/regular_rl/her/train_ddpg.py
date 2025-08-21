@@ -39,7 +39,7 @@ def train_ddpg():
     venv = make_vec_env(
         env_id=f"gymnasium_env/ur3e-v2",
         n_envs=n_envs,
-        env_kwargs={"render_mode": "rgb_array"},
+        env_kwargs={"render_mode": "human" if visualize else "rgb_array"},
         vec_env_cls=SubprocVecEnv,
         **venv_kwargs
     )

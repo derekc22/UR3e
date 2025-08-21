@@ -2,6 +2,7 @@ action_mode: "indirect"
 device: "cpu"
 resume_training: True
 n_envs: 1
+visualize: True
 hyperparameters:
   clip_obs: 10
   net_arch: 

@@ -3,7 +3,7 @@ import numpy as np
 np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 import matplotlib
 matplotlib.use('Agg')  # Set backend to non-interactive
-from controller.controller_utils import get_joint_space_state, pd_joint_ctrl, grip_ctrl, update_errs
+from controller.controller_func import get_joint_space_state, pd_joint_ctrl, grip_ctrl, update_errs
 from utils.utils import load_model, reset, get_ur3e_qpos, get_joint_torques
 from controller.build_traj import build_traj_j
 from controller.aux import load_trajectory, cleanup
