@@ -38,7 +38,7 @@ def train_sac():
     venv = make_vec_env(
         env_id=f"gymnasium_env/ur3e-v2",
         n_envs=n_envs,
-        env_kwargs={"render_mode": "rgb_array"},
+        env_kwargs={"render_mode": "human" if visualize else "rgb_array"},
         vec_env_cls=SubprocVecEnv,
         **venv_kwargs
     )
@@ -81,7 +81,7 @@ def train_sac():
     model.save(policy_fpath)
     venv.save(vecnormalize_fpath)
 
-    print(f"Saved DDPG policy to {policy_fpath}")
+    print(f"Saved SAC policy to {policy_fpath}")
     print(f"Saved VecNormalize stats to {vecnormalize_fpath}")
 
 
@@ -91,6 +91,7 @@ if __name__ == "__main__":
     device = yml["device"]
     n_envs = yml["n_envs"]
     resume_training = yml["resume_training"]
+    visualize = yml["visualize"]
 
     hyperparameters = yml["hyperparameters"]
     clip_obs = hyperparameters["clip_obs"]

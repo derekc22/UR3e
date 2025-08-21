@@ -3,7 +3,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 import matplotlib
-from controller.controller_utils import euler_to_R, get_xpos, get_xrot
+from controller.controller_func import euler_to_R, get_xpos, get_xrot
 matplotlib.use('Agg')  # Set backend to non-interactive
 import yaml
 np.set_printoptions(precision=3)
