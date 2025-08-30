@@ -408,14 +408,11 @@
   </sensor>
 
   <keyframe>
-      <!-- use z=0 qpos home for the mug -->
-      <!-- qpos="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.4 0.5 0 0.7071 0.7071 0 0"  --> 
-      <!-- use z=0.03 qpos home for the box -->
-      <!-- qpos="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.445 0.375 0.055111 1 0 0 0"  --> 
     <key name="home" 
       qpos="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.445 0.375 0.055111 1 0 0 0"
       qvel="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
     />
+  <!-- 0.29799994 0.13349916 0.1682003 is the initial xpos position of the gripper when initialized with the 'down' keyframe -->
     <key name="down" 
       qpos="0 -1.5708 1.5708 -1.5708 -1.5708 0 0 0 0 0 0 0 0 0 0.29799994 0.13349916 0.055111 1 0 0 0"
       qvel="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"

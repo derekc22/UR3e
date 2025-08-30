@@ -64,7 +64,7 @@ def train_bc(expert_trajs):
 
     # Convert expert trajectories to transitions
     transitions = rollout.flatten_trajectories(expert_trajs)
-    print(f"Number of transitions: {len(transitions)}. Total number of batches: {int(len(transitions)/batch_size)*n_epochs}")
+    print(f"Number of transitions per epoch: {len(transitions)*n_epochs}. Total number of batches (all epochs): {int(len(transitions)/batch_size)*n_epochs}")
 
     # Initialize the BC trainer
     bc_trainer = bc.BC(
