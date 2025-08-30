@@ -57,12 +57,78 @@ def build_traj_l_pick_place(start: np.ndarray,
         return traj
     
     save_traj(traj, trajectory_fpath, ctrl_mode="l")
+
+def build_traj_l_pick_place_imitation_augmented(start: np.ndarray, 
+                                                destinations: list[np.ndarray],
+                                                hold: int,
+                                                trajectory_fpath: str = None) -> None:
+    
+    # FOR PD CONTROL, "HOLD" CAN BE NON-STANDARDIZED
+    # FOR PID CONTROL, "HOLD" MUST BE STANDARDIZED
+    block, target = destinations
+    
+    buffer = 500 
+    large_noise_norm = 20  # 0.05  m
+    med_noise_norm = 40    # 0.025 m
+    small_noise_norm = 100 # 0.01  m
+    zero_noise_norm = 100000 # 0 m basically
+    
+    pick = np.hstack([block[:2], [start[2]], block[3:]])
+    traj_pick = build_traj_l_point_custom(start, pick, hold=100)
+    T_pick = traj_pick.shape[0]
+    traj_pick += np.vstack([np.random.rand(T_pick-buffer, 7)/med_noise_norm, np.zeros(shape=(buffer, 7))])
+    
+    down = np.hstack([traj_pick[-1, :2], [block[2]], traj_pick[-1, 3:]])
+    traj_down = build_traj_l_point_custom(traj_pick[-1, :], down, hold=100)
+    T_down = traj_down.shape[0]
+    traj_down += np.vstack([np.random.rand(T_down-buffer, 7)/med_noise_norm, np.zeros(shape=(buffer, 7))])
+
+    grab = np.append(traj_down[-1, :-1], 1)
+    traj_grab = build_traj_l_point_custom(traj_down[-1, :], grab, hold=100)
+    T_grab = traj_grab.shape[0]
+    traj_grab += np.vstack([np.random.rand(T_grab-buffer, 7)/large_noise_norm, np.zeros(shape=(buffer, 7))])
+
+    up = traj_grab[-1, :] + [0, 0, 0.15, 0, 0, 0, 0]
+    traj_up = build_traj_l_point_custom(traj_grab[-1, :], up, hold=100)
+    T_up = traj_up.shape[0]
+    traj_up += np.random.rand(T_up, 7)/large_noise_norm
+    
+    place = np.hstack([target[:2], traj_up[-1, 2], target[3:]])
+    traj_place = build_traj_l_point_custom(traj_up[-1, :], place, hold=100)
+    T_place = traj_place.shape[0]
+    traj_place += np.vstack([np.random.rand(T_place-buffer, 7)/large_noise_norm, np.zeros(shape=(buffer, 7))])
+    
+    descend = target + [0, 0, 0.025, 0, 0, 0, 0] 
+    traj_descend = build_traj_l_point_custom(traj_place[-1, :], descend, hold=100)
+    T_descend = traj_descend.shape[0]
+    traj_descend += np.vstack([np.random.rand(T_descend-buffer, 7)/large_noise_norm, np.zeros(shape=(buffer, 7))])
+    
+    end_drop = np.append(traj_descend[-1, :-1], 0)
+    traj_drop = build_traj_l_point_custom(traj_descend[-1, :], end_drop, hold=100)
+    T_drop = traj_drop.shape[0]
+    traj_drop += np.vstack([np.random.rand(T_drop-buffer, 7)/large_noise_norm, np.zeros(shape=(buffer, 7))])
+    
+    traj = np.vstack([
+        traj_pick,
+        traj_down,
+        traj_grab,
+        traj_up, 
+        traj_place,
+        traj_descend,
+        traj_drop
+    ])
     
 
-def build_traj_l_pick_place_RL(start: np.ndarray, 
-                            destinations: list[np.ndarray],
-                            hold: int,
-                            trajectory_fpath: str = None) -> None:
+    if not trajectory_fpath:
+        return traj
+    
+    save_traj(traj, trajectory_fpath, ctrl_mode="l")
+    
+
+def build_traj_l_pick_place_imitation(start: np.ndarray, 
+                                      destinations: list[np.ndarray],
+                                      hold: int,
+                                      trajectory_fpath: str = None) -> None:
 
     # FOR PD CONTROL, "HOLD" CAN BE NON-STANDARDIZED
     # FOR PID CONTROL, "HOLD" MUST BE STANDARDIZED
@@ -148,10 +214,11 @@ def build_traj_l_pick_move_place(start: np.ndarray,
 
 def build_traj_l_point_custom(start: np.ndarray, 
                               stop: np.ndarray,
-                              hold: int) -> None:
+                              hold: int,
+                              num_points: int = 15) -> None:
 
     # Generate trajectory points
-    num_points = 15
+    # num_points = 15
     # num_points = 30
     t = np.linspace(0, 1, num_points+1)
             

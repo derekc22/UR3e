@@ -8,8 +8,7 @@ np.set_printoptions(precision=3, linewidth=3000, threshold=np.inf)
 matplotlib.use('Agg')  # Set backend to non-interactive
 from controller.controller_func import get_task_space_state, pid_task_ctrl
 from utils.utils import *
-from controller.build_traj import build_traj_l_pick_move_place, build_traj_l_pick_place_RL, build_traj_l_pick_place
-from controller.aux import load_trajectory, cleanup
+from controller.build_traj import build_traj_l_pick_move_place, build_traj_l_pick_place_imitation, build_traj_l_pick_place, build_traj_l_pick_place_imitation_augmented
 from utils.gym_utils import *
 from utils.utils import load_model, get_joint_torques, get_jnt_ranges
 import pickle as pkl
@@ -111,7 +110,10 @@ def collect_expert_demonstrations(num_demos):
         
         # Build trajectory in memory
         pick = np.hstack([get_mug_xpos(m, d), init_r, 0.0])
-        traj_target = build_traj_l_pick_place_RL(get_task_space_state(m, d), [pick, place], hold)
+        traj_target = build_traj_l_pick_place_imitation_augmented(get_task_space_state(m, d), [pick, place], hold)
+        
+        # pick = np.hstack([get_mug_xpos(m, d), init_r, 0.0])
+        # traj_target = build_traj_l_pick_place_imitation(get_task_space_state(m, d), [pick, place], hold)
         
         # Build trajectory in memory
         # pick = np.hstack([get_mug_xpos(m, d), init_r, 0.5])
@@ -220,12 +222,12 @@ if __name__ == "__main__":
     with open("gymnasium_src/config/settings.yml", "r") as f:  yml = yaml.safe_load(f)
     settings = yml["collect_demos.py"]    
     action_mode = settings["action_mode"]
+    resume_collecting = settings["resume_collecting"]
     num_demos = settings["num_demos"]
     visualize = settings["visualize"]
     reset_mode = settings["reset_mode"]
     noise_mag = settings["noise_mag"]
     down_sample = settings["down_sample"]
-    resume_collecting = settings["resume_collecting"]
 
     # Collect and save demonstrations
     demos_fpath = f"gymnasium_src/demos/expert_demos_{action_mode}.pkl"

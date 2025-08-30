@@ -4,12 +4,13 @@ resume_training: False
 hyperparameters:
   clip_obs: 10
   net_arch:
+    - 64
     - 256
     - 256
   optimizer_lr: 3e-4
   l2_weight: 1e-4
   ent_weight: 1e-3
-  batch_size: 100
-  n_epochs: 1000
+  batch_size: 15
+  n_epochs: 1
   feature_encoder: "transformer"
-  history_len: 5
+  history_len: 15
