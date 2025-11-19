@@ -36,14 +36,14 @@ def get_site_id(m: mujoco.MjModel,
     return mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_SITE, site)
 
 
-def get_joint_id(m: mujoco.MjModel, 
-                 joint: str) -> int:
-    return mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, joint)
+def get_jnt_id(m: mujoco.MjModel, 
+               jnt: str) -> int:
+    return mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JNT, jnt)
 
 
-def get_joint_name(m: mujoco.MjModel, 
-                   id: str) -> int:
-    return mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_JOINT, id)
+def get_geom_id(m: mujoco.MjModel, 
+                geom: str) -> int:
+    return mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, geom)
 
 
 def get_body_name(m: mujoco.MjModel,
@@ -56,11 +56,14 @@ def get_site_name(m: mujoco.MjModel,
     return mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_SITE, id)
 
 
-def get_joint_name(m: mujoco.MjModel,
-                   id: int) -> str:
-    return mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_JOINT, id)
+def get_jnt_name(m: mujoco.MjModel,
+                 id: int) -> str:
+    return mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_JNT, id)
 
 
+def get_geom_name(m: mujoco.MjModel, 
+                  id: int) -> str:
+    return mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_GEOM, id)
 
 
 
@@ -119,8 +122,8 @@ def get_site_xquat(m: mujoco.MjModel,
 
 
 def get_site_R(m: mujoco.MjModel, 
-                     d: mujoco.MjData,
-                     site: str) -> R:
+               d: mujoco.MjData,
+               site: str) -> R:
     """Return scipy Rotation object"""
     xmat = get_site_xmat(m, d, site).reshape(3, 3)
     return R.from_matrix(xmat)
@@ -170,11 +173,14 @@ def get_site_vel(m: mujoco.MjModel,
 
 def get_body_size(m: mujoco.MjModel, 
                   body: str) -> np.ndarray:
-    return m.geom_size[m.geom_bodyid == get_body_id(m, body)][0]
+    geom_sizes = m.geom_size[m.geom_bodyid == get_body_id(m, body)]
+    return geom_sizes[0]
+    # The shape of geom_sizes is always (N, 3) - where N is the number of geoms for that body
+    # We return geom_sizes[0] to return the geom_size array associated with the first chronological geom
 
 
-def get_joint_torques(d):
-    joints = [
+def get_jnt_torques(d):
+    jnts = [
         "shoulder_pan_actuatorfrc",
         "shoulder_lift_actuatorfrc",
         "elbow_actuatorfrc",
@@ -183,7 +189,7 @@ def get_joint_torques(d):
         "wrist_3_actuatorfrc",
         "fingers_actuatorfrc"
     ]
-    return np.array([ d.sensor(joint).data[0] for joint in joints ])
+    return np.array([ d.sensor(jnt).data[0] for jnt in jnts ])
 
 
 # @DEPRECATED
@@ -226,8 +232,8 @@ def get_grasp_contact(d: mujoco.MjData) -> tuple[float, float]:
 
 
 def get_jnt_range(m: mujoco.MjModel,
-                  joint: str = None) -> np.ndarray:
-    return m.jnt_range[get_joint_id(m, joint)]
+                  jnt: str = None) -> np.ndarray:
+    return m.jnt_range[get_jnt_id(m, jnt)]
 
 
 def get_jnt_ranges(m: mujoco.MjModel) -> np.ndarray:
@@ -292,10 +298,39 @@ def get_fingers_rel_dist(m: mujoco.MjModel,
 
 def get_finger_jnt_disp(d: mujoco.MjData) -> np.ndarray:
     # 6 = "right_spring_link", 10 = "left_spring_link" 
-    # Assume initial qpos = 0 for these joints
+    # Assume initial qpos = 0 for these jnts
     # return np.array([d.qpos[6], d.qpos[10]])
     return d.qpos[6] # rad
 
 def get_finger_jnt_vel(d: mujoco.MjData) -> np.ndarray:
     # 6 = "right_spring_link", 10 = "left_spring_link" 
     return d.qvel[6] # rad/s
+
+###################### DYNAMIC & INERTIAL ############################
+
+def get_body_mass(m: mujoco.MjModel,
+                  body: str) -> int:
+    return m.body_mass[get_body_id(m, body)]
+
+def get_jnt_damping(m: mujoco.MjModel,
+                    joint: str) -> int:
+    return m.dof_damping[get_jnt_id(m, joint)]
+
+def get_jnt_armature(m: mujoco.MjModel,
+                     joint: str) -> int:
+    return m.dof_armature[get_jnt_id(m, joint)]
+
+def get_jnt_stiffness(m: mujoco.MjModel,
+                      joint: str) -> int:
+    return m.jnt_stiffness[get_jnt_id(m, joint)]
+
+def get_jnt_frictionloss(m: mujoco.MjModel,
+                         joint: str) -> int:
+    return m.dof_frictionloss[get_jnt_id(m, joint)]
+
+def get_gravity(m: mujoco.MjModel) -> int:
+    return m.opt.gravity[-1]
+
+def get_body_inertia(m: mujoco.MjModel,
+                     body: str) -> int:
+    return m.body_inertia[get_body_id(m, body)]
