@@ -38,7 +38,7 @@ def get_site_id(m: mujoco.MjModel,
 
 def get_jnt_id(m: mujoco.MjModel, 
                jnt: str) -> int:
-    return mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JNT, jnt)
+    return mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, jnt)
 
 
 def get_geom_id(m: mujoco.MjModel, 
@@ -58,7 +58,7 @@ def get_site_name(m: mujoco.MjModel,
 
 def get_jnt_name(m: mujoco.MjModel,
                  id: int) -> str:
-    return mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_JNT, id)
+    return mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_JOINT, id)
 
 
 def get_geom_name(m: mujoco.MjModel, 
@@ -298,7 +298,7 @@ def get_fingers_rel_dist(m: mujoco.MjModel,
 
 def get_finger_jnt_disp(d: mujoco.MjData) -> np.ndarray:
     # 6 = "right_spring_link", 10 = "left_spring_link" 
-    # Assume initial qpos = 0 for these jnts
+    # Assume initial qpos = 0 for these joints
     # return np.array([d.qpos[6], d.qpos[10]])
     return d.qpos[6] # rad
 
