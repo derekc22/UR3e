@@ -105,6 +105,25 @@ def get_body_xrotvec(m: mujoco.MjModel,
     return R.from_matrix(xmat).as_rotvec()
 
 
+def get_body_cvel(m: mujoco.MjModel, 
+                  d: mujoco.MjData,
+                  body: str) -> np.ndarray:
+    # The first three elements correspond to the angular (rotational) component
+    # The last three correspond to the linear (translational) component
+    # The translational velocity components are in the global (world) frame
+    # The angular velocity components are in the local frame of the body
+    return d.cvel[get_body_id(m, body)]
+
+
+###################### GEOM XPOS, XQUAT, R, XMAT, XROTVEC ############################
+
+def get_geom_xpos(m: mujoco.MjModel, 
+                  d: mujoco.MjData, 
+                  geom: str) -> np.ndarray:
+    geom_id = get_geom_id(m, geom)
+    return d.geom(geom_id).xpos
+
+
 ###################### SITE XPOS, XQUAT, R, XMAT, XROTVEC ############################
 
 def get_site_xpos(m: mujoco.MjModel, 
@@ -143,7 +162,7 @@ def get_site_xrotvec(m: mujoco.MjModel,
     return R.from_matrix(xmat).as_rotvec()
 
 
-###################### SITE XPOS, XQUAT, R, XMAT, XROTVEC ############################
+###################### SITE VELP, VELR, VEL ############################
 
 def get_site_velp(m: mujoco.MjModel, 
                   d: mujoco.MjData, 
@@ -309,28 +328,80 @@ def get_finger_jnt_vel(d: mujoco.MjData) -> np.ndarray:
 ###################### DYNAMIC & INERTIAL ############################
 
 def get_body_mass(m: mujoco.MjModel,
-                  body: str) -> int:
+                  body: str) -> float:
     return m.body_mass[get_body_id(m, body)]
 
 def get_jnt_damping(m: mujoco.MjModel,
-                    joint: str) -> int:
+                    joint: str) -> float:
     return m.dof_damping[get_jnt_id(m, joint)]
 
 def get_jnt_armature(m: mujoco.MjModel,
-                     joint: str) -> int:
+                     joint: str) -> float:
     return m.dof_armature[get_jnt_id(m, joint)]
 
 def get_jnt_stiffness(m: mujoco.MjModel,
-                      joint: str) -> int:
+                      joint: str) -> float:
     return m.jnt_stiffness[get_jnt_id(m, joint)]
 
 def get_jnt_frictionloss(m: mujoco.MjModel,
-                         joint: str) -> int:
+                         joint: str) -> float:
     return m.dof_frictionloss[get_jnt_id(m, joint)]
 
-def get_gravity(m: mujoco.MjModel) -> int:
+def get_gravity(m: mujoco.MjModel) -> float:
     return m.opt.gravity[-1]
 
 def get_body_inertia(m: mujoco.MjModel,
-                     body: str) -> int:
+                     body: str) -> float:
     return m.body_inertia[get_body_id(m, body)]
+
+
+
+###################### JACOBIANS ############################
+
+# Jp = np.zeros((3, model.nv))
+# Jr = np.zeros((3, model.nv))
+
+# # site jacobian
+# mujoco.mj_jacSite(model, data, Jp, Jr, site_id)
+
+# # geom jacobian
+# mujoco.mj_jacGeom(model, data, Jp, Jr, geom_id)
+
+# # body jacobian
+# mujoco.mj_jacBody(model, data, Jp, Jr, body_id)
+
+
+
+
+
+###################### MISC ############################
+
+if __name__ == "__main__":
+
+    m = mujoco.MjModel.from_xml_path("assets/hector_v2/mvsc_fixed_base_mjx_general.xml")
+    d = mujoco.MjData(m)
+
+    # mass
+    print(m.body_mass)
+    print(m.body_mass.shape)
+    print(m.nbody)
+
+    # damping
+    print(m.dof_damping)
+    print(m.dof_damping.shape)
+    print(m.nv)
+
+    # damping
+    print(m.dof_armature)
+    print(m.dof_armature.shape)
+    print(m.nv)
+
+    # stiffness
+    print(m.jnt_stiffness)
+    print(m.jnt_stiffness.shape)
+    print(m.nv)
+
+    # frictionloss
+    print(m.dof_frictionloss)
+    print(m.dof_frictionloss.shape)
+    print(m.nv)
