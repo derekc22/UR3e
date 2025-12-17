@@ -9,3 +9,4 @@ controller/data
 gymnasium_src/demos/*
 policies/*
 misc/docs/*
+.pylintrc
