@@ -10,7 +10,7 @@
 To install the UR3e environment, run the following commands:
 
 ```bash
-git clone https://github.com/yourusername/UR3e.git
+git clone git@github.com:derekc22/UR3e.git
 cd UR3e
 pip install -e .
 ```
